@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wasserstein Diffusion on the Annotation Simplex — Phase 1</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+  }
+  header {
+    padding: 40px 20px 20px;
+    text-align: center;
+    border-bottom: 1px solid #21262d;
+  }
+  header h1 { margin: 0 0 8px; font-size: 26px; }
+  header p { color: #8b949e; margin: 4px 0; }
+  .section {
+    max-width: 950px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  .section h2 {
+    border-left: 4px solid #58a6ff;
+    padding-left: 10px;
+    font-size: 20px;
+  }
+  /* pipeline animation */
+  #pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 30px;
+  }
+  .node {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 14px 12px;
+    width: 150px;
+    text-align: center;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .5s ease, transform .5s ease, border-color .3s;
+  }
+  .node.show { opacity: 1; transform: translateY(0); }
+  .node.active { border-color: #58a6ff; box-shadow: 0 0 14px rgba(88,166,255,.35); }
+  .node small { color: #8b949e; display: block; margin-top: 4px; }
+  .arrow {
+    font-size: 22px;
+    color: #30363d;
+    opacity: 0;
+    transition: opacity .5s ease, color .3s ease;
+  }
+  .arrow.show { opacity: 1; }
+  .arrow.active { color: #58a6ff; }
+  #playBtn {
+    margin-top: 18px;
+    background: #238636;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #playBtn:hover { background: #2ea043; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { border: 1px solid #30363d; padding: 8px 10px; text-align: left; }
+  th { background: #161b22; }
+  .mine { color: #79c0ff; }
+  .baseline { color: #ffa657; }
+
+  .chartbox { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px; margin-top:16px; }
+  .legend { font-size: 13px; margin-top: 6px; }
+  .legend span { margin-right: 18px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
+
+  .note {
+    background: #1c2128;
+    border-left: 4px solid #d29922;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    color: #c9d1d9;
+    margin-top: 16px;
+    border-radius: 4px;
+  }
+  footer { text-align:center; color:#8b949e; font-size:12px; padding: 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Wasserstein Diffusion on the Annotation Simplex</h1>
+  <p>Phase 1 proof-of-concept — Milind Sahu, BS-MS Mathematics, IISER Tirupati</p>
+  <p>Toy TVSum-style data · June 16&ndash;30, 2026 sprint</p>
+</header>
+
+<div class="section">
+  <h2>What this actually does</h2>
+  <p>Three fixes on top of the Shang et al. (AAAI-25) video summarization diffusion model, replacing
+  operations that treat annotator importance scores as free vectors in R^N with ones that respect
+  the fact they live on the probability simplex:</p>
+  <ol>
+    <li><b>Fix 1</b> — replace the arithmetic mean of annotators with a Wasserstein (Sinkhorn) barycenter.</li>
+    <li><b>Fix 2</b> — replace Gaussian forward diffusion noise with Dirichlet noise + simplex projection.</li>
+    <li><b>Fix 3</b> — add a Wasserstein-distance penalty term to the training loss.</li>
+  </ol>
+
+  <div id="pipeline">
+    <div class="node" data-i="0">K annotators<small>score vectors on the simplex</small></div>
+    <div class="arrow" data-i="1">&rarr;</div>
+    <div class="node" data-i="2">Barycenter<small>Fix 1: Sinkhorn OT</small></div>
+    <div class="arrow" data-i="3">&rarr;</div>
+    <div class="node" data-i="4">Dirichlet forward<small>Fix 2: noise + Proj&Delta;</small></div>
+    <div class="arrow" data-i="5">&rarr;</div>
+    <div class="node" data-i="6">Noise predictor<small>tiny linear net (phase 1)</small></div>
+    <div class="arrow" data-i="7">&rarr;</div>
+    <div class="node" data-i="8">W2 loss<small>Fix 3: MSE + &lambda;&middot;W2</small></div>
+  </div>
+  <button id="playBtn" onclick="playPipeline()">&#9654; Play pipeline</button>
+</div>
+
+<div class="section">
+  <h2>Loss curves (mine vs. baseline)</h2>
+  <div class="chartbox">
+    <svg id="lossChart" width="100%" viewBox="0 0 900 320"></svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#79c0ff"></i>mine (barycenter + dirichlet + W2 loss)</span>
+      <span><i class="dot" style="background:#ffa657"></i>baseline (arithmetic mean + gaussian + MSE)</span>
+    </div>
+  </div>
+  <div class="note">
+    Note: the "mine" loss includes the extra &lambda;&middot;W2 penalty term, so its raw value isn't
+    directly comparable to the baseline's plain MSE — that's a units mismatch, not a bug. The metric
+    that actually matters for the non-regression claim is the held-out W2 distance table below.
+  </div>
+</div>
+
+<div class="section">
+  <h2>Held-out comparison</h2>
+  <table id="resultsTable"></table>
+</div>
+
+<div class="section">
+  <h2>Barycenter vs. arithmetic mean on the disagreement case</h2>
+  <div class="chartbox">
+    <svg id="distChart" width="100%" viewBox="0 0 900 260"></svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#8b949e"></i>annotators (faint)</span>
+      <span><i class="dot" style="background:#79c0ff"></i>barycenter x*</span>
+      <span><i class="dot" style="background:#ffa657"></i>arithmetic mean</span>
+    </div>
+  </div>
+  <div class="note">
+    On this synthetic two-camp video (half the annotators peak around frame 5&ndash;10, half around
+    frame 20&ndash;25), the arithmetic mean stays bimodal while the barycenter smooths toward a single
+    interpolated mode &mdash; the expected qualitative behaviour from Figure 1 of the proposal. In this
+    particular run the barycenter's average W2 distance to the annotators came out <i>higher</i> than
+    the arithmetic mean's under the simplified CDF-based W2 proxy used here, which is the opposite of
+    what the theory predicts under the true W2 metric. Flagged as an open question for Phase 2 —
+    likely the 1D "sum of squared CDF differences" proxy isn't equivalent to the true W2 the Sinkhorn
+    barycenter actually minimizes. Reporting it as-is rather than smoothing it over.
+  </div>
+</div>
+
+<footer>Phase 1 sprint output &middot; synthetic data, not TVSum &middot; see README for the full write-up</footer>
+
+<script>
+const DATA = __DATA_JSON__;
+
+function playPipeline(){
+  const nodes = document.querySelectorAll('#pipeline .node, #pipeline .arrow');
+  nodes.forEach(n => { n.classList.remove('show','active'); });
+  let i = 0;
+  function step(){
+    if(i > 0) nodes[i-1].classList.remove('active');
+    if(i >= nodes.length) return;
+    nodes[i].classList.add('show','active');
+    i++;
+    setTimeout(step, 450);
+  }
+  step();
+}
+window.addEventListener('load', playPipeline);
+
+function drawLossChart(){
+  const svg = document.getElementById('lossChart');
+  const W=900,H=320,padL=40,padB=30,padT=10,padR=10;
+  const mine = DATA.mine_losses, base = DATA.baseline_losses;
+  const all = mine.concat(base);
+  const maxY = Math.max(...all)*1.05, minY = 0;
+  const n = mine.length;
+  function pt(arr,i){
+    const x = padL + (i/(n-1))*(W-padL-padR);
+    const y = H-padB - ((arr[i]-minY)/(maxY-minY))*(H-padB-padT);
+    return [x,y];
+  }
+  function pathFor(arr,color){
+    let d = '';
+    for(let i=0;i<arr.length;i++){
+      const [x,y]=pt(arr,i);
+      d += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+    }
+    return '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2"/>';
+  }
+  let html = '';
+  // axes
+  html += `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#30363d"/>`;
+  html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#30363d"/>`;
+  html += `<text x="4" y="${padT+10}" fill="#8b949e" font-size="11">${maxY.toFixed(2)}</text>`;
+  html += `<text x="4" y="${H-padB}" fill="#8b949e" font-size="11">0</text>`;
+  html += `<text x="${W/2}" y="${H-4}" fill="#8b949e" font-size="11" text-anchor="middle">training step</text>`;
+  html += pathFor(mine, '#79c0ff');
+  html += pathFor(base, '#ffa657');
+  svg.innerHTML = html;
+}
+
+function drawDistChart(){
+  const svg = document.getElementById('distChart');
+  const W=900,H=260,padL=30,padB=25,padT=10,padR=10;
+  const annots = DATA.annotator_scores;
+  const bary = DATA.x_star_mine;
+  const am = DATA.x_star_baseline;
+  const N = bary.length;
+  const maxY = Math.max(...annots.flat(), ...bary, ...am)*1.1;
+  function xFor(i){ return padL + (i/(N-1))*(W-padL-padR); }
+  function yFor(v){ return H-padB - (v/maxY)*(H-padB-padT); }
+  function pathFor(arr){
+    let d='';
+    for(let i=0;i<N;i++){ d += (i===0?'M':'L')+xFor(i).toFixed(1)+','+yFor(arr[i]).toFixed(1)+' '; }
+    return d;
+  }
+  let html = '';
+  html += `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#30363d"/>`;
+  annots.forEach(a => {
+    html += `<path d="${pathFor(a)}" fill="none" stroke="#8b949e" stroke-width="1" opacity="0.35"/>`;
+  });
+  html += `<path d="${pathFor(bary)}" fill="none" stroke="#79c0ff" stroke-width="2.5"/>`;
+  html += `<path d="${pathFor(am)}" fill="none" stroke="#ffa657" stroke-width="2.5"/>`;
+  html += `<text x="${W/2}" y="${H-4}" fill="#8b949e" font-size="11" text-anchor="middle">frame index</text>`;
+  svg.innerHTML = html;
+}
+
+function fillTable(){
+  const t = document.getElementById('resultsTable');
+  t.innerHTML = `
+    <tr><th>config</th><th>final training loss</th><th>held-out W2 dist to annotators</th></tr>
+    <tr><td class="mine">mine (barycenter+dirichlet+W2)</td><td>${DATA.mine_final_loss.toFixed(4)}</td><td>${DATA.mine_heldout_w2.toFixed(4)}</td></tr>
+    <tr><td class="baseline">baseline (arith mean+gaussian+MSE)</td><td>${DATA.baseline_final_loss.toFixed(4)}</td><td>${DATA.baseline_heldout_w2.toFixed(4)}</td></tr>
+  `;
+}
+
+drawLossChart();
+drawDistChart();
+fillTable();
+</script>
+</body>
+</html>
