@@ -7,26 +7,33 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #0d1117;
-    color: #e6edf3;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f7f7f3;
+    color: #111111;
+    line-height: 1.6;
   }
   header {
-    padding: 40px 20px 20px;
+    padding: 48px 20px 24px;
     text-align: center;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 2px solid #111111;
+    background: #ffffff;
   }
-  header h1 { margin: 0 0 8px; font-size: 26px; }
-  header p { color: #8b949e; margin: 4px 0; }
+  header h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: 0.02em; }
   .section {
-    max-width: 950px;
-    margin: 40px auto;
+    max-width: 980px;
+    margin: 36px auto;
     padding: 0 20px;
   }
   .section h2 {
-    border-left: 4px solid #58a6ff;
-    padding-left: 10px;
+    border-left: 4px solid #111111;
+    padding-left: 12px;
     font-size: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 0.01em;
+  }
+  p, li, td, th {
+    font-size: 15px;
+    color: #222222;
   }
   /* pipeline animation */
   #pipeline {
@@ -38,8 +45,8 @@
     margin-top: 30px;
   }
   .node {
-    background: #161b22;
-    border: 1px solid #30363d;
+    background: #ffffff;
+    border: 1px solid #111111;
     border-radius: 10px;
     padding: 14px 12px;
     width: 150px;
@@ -48,51 +55,53 @@
     opacity: 0;
     transform: translateY(14px);
     transition: opacity .5s ease, transform .5s ease, border-color .3s;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
   }
   .node.show { opacity: 1; transform: translateY(0); }
-  .node.active { border-color: #58a6ff; box-shadow: 0 0 14px rgba(88,166,255,.35); }
-  .node small { color: #8b949e; display: block; margin-top: 4px; }
+  .node.active { border-color: #111111; box-shadow: 0 0 0 2px rgba(17,17,17,.08); }
+  .node small { color: #555555; display: block; margin-top: 4px; }
   .arrow {
     font-size: 22px;
-    color: #30363d;
+    color: #777777;
     opacity: 0;
     transition: opacity .5s ease, color .3s ease;
   }
   .arrow.show { opacity: 1; }
-  .arrow.active { color: #58a6ff; }
+  .arrow.active { color: #111111; }
   #playBtn {
     margin-top: 18px;
-    background: #238636;
+    background: #111111;
     color: white;
-    border: none;
+    border: 1px solid #111111;
     padding: 8px 18px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
+    font-family: inherit;
   }
-  #playBtn:hover { background: #2ea043; }
+  #playBtn:hover { background: #222222; }
 
-  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
-  th, td { border: 1px solid #30363d; padding: 8px 10px; text-align: left; }
-  th { background: #161b22; }
-  .mine { color: #79c0ff; }
-  .baseline { color: #ffa657; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; background: #ffffff; }
+  th, td { border: 1px solid #111111; padding: 8px 10px; text-align: left; }
+  th { background: #111111; color: #ffffff; }
+  .mine { color: #2c7be5; }
+  .baseline { color: #ff7a1a; }
 
-  .chartbox { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px; margin-top:16px; }
-  .legend { font-size: 13px; margin-top: 6px; }
+  .chartbox { background:#ffffff; border:1px solid #111111; border-radius:10px; padding:14px; margin-top:16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .legend { font-size: 13px; margin-top: 6px; color: #333333; }
   .legend span { margin-right: 18px; }
   .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
 
   .note {
-    background: #1c2128;
-    border-left: 4px solid #d29922;
+    background: #f2f2f0;
+    border-left: 4px solid #111111;
     padding: 12px 14px;
     font-size: 13.5px;
-    color: #c9d1d9;
+    color: #222222;
     margin-top: 16px;
     border-radius: 4px;
   }
-  footer { text-align:center; color:#8b949e; font-size:12px; padding: 30px; }
+  footer { text-align:center; color:#444444; font-size:12px; padding: 30px 20px 40px; }
 </style>
 </head>
 <body>
