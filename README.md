@@ -1,9 +1,9 @@
 # Wasserstein Diffusion on the Annotation Simplex — Phase 1 code
 
-Proof-of-concept code for the 11-day sprint (Jun 16-30 2026) implementing the
-three fixes from the proposal on top of the Shang et al. (AAAI-25) video
-summarization diffusion model. Matches the roadmap's Phase 1 scope: small,
-synthetic-data prototype, not the full TVSum/SumMe/FPVSum run (that's Phase 2).
+Proof-of-concept code implementing the three fixes from the proposal on top
+of the Shang et al. (AAAI-25) video summarization diffusion model. Matches
+the roadmap's Phase 1 scope: small, synthetic-data prototype, not the full
+TVSum/SumMe/FPVSum run (that's Phase 2).
 
 No internet access to TVSum in this environment, so `train.py` generates a
 synthetic "two-camp" toy video (some annotators peak around frame 5-10, some
