@@ -78,14 +78,33 @@ def run_config(annotator_scores, mode="mine", steps=80, T=200):
     return {"losses": losses, "x_star": x_star.tolist(), "heldout_w2": heldout_w2}
 
 
+from dataset import load_tvsum_data, get_video_distributions
+from download_tvsum import download_or_generate_tvsum
+
 def main():
     results_dir = os.path.join(os.path.dirname(__file__), "..", "results")
     os.makedirs(results_dir, exist_ok=True)
+    
+    tsv_path = os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv")
+    if not os.path.exists(tsv_path):
+        download_or_generate_tvsum(tsv_path)
+        
+    tvsum_videos = load_tvsum_data(tsv_path)
+    # Pick a video for the visualization/experiment, e.g., the first one
+    vid_key = list(tvsum_videos.keys())[0]
+    raw_scores = tvsum_videos[vid_key]
+    
+    # Preprocess: sub-sample the frames to reduce compute time for POC
+    # raw_scores shape: (20, N), N can be thousands. Let's sample 100 frames
+    if raw_scores.shape[1] > 100:
+        indices = np.linspace(0, raw_scores.shape[1] - 1, 100, dtype=int)
+        raw_scores = raw_scores[:, indices]
+        
+    video = get_video_distributions(raw_scores)
 
-    video = makeToyVideo()
     results = {}
     for mode in ["mine", "baseline"]:
-        results[mode] = run_config(video, mode=mode)
+        results[mode] = run_config(video, mode=mode, steps=120)
 
     with open(os.path.join(results_dir, "comparison.csv"), "w", newline="") as f:
         w = csv.writer(f)
@@ -99,7 +118,7 @@ def main():
     plt.xlabel("step")
     plt.ylabel("loss")
     plt.legend()
-    plt.title("Phase 1 preliminary loss curves (toy data)")
+    plt.title(f"Phase 2 loss curves (TVSum {vid_key})")
     plt.savefig(os.path.join(results_dir, "loss_curve.png"), dpi=120)
 
     out = {

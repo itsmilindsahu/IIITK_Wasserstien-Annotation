@@ -304,13 +304,13 @@
 <!-- ── HERO ── -->
 <div class="hero">
   <div class="container">
-    <div class="hero-label">&mdash; Project Walkthrough &middot; Phase 1 Prototype</div>
+    <div class="hero-label">&mdash; Project Walkthrough &middot; Phase 2 Execution</div>
     <h1>Wasserstein Diffusion<br><span>on the Annotation Simplex</span></h1>
     <div class="hero-meta">
       <div><span class="dot"></span> IIITKottayam &middot; CSE</div>
       <div><span class="dot orange"></span> Dr. Priyadarshni</div>
       <div><span class="dot blue"></span> Jan 2025 &ndash; May 2026</div>
-      <div><span class="dot"></span> Phase 1 &middot; June &ndash; July 2026</div>
+      <div><span class="dot"></span> Phase 2 &middot; August 2026</div>
     </div>
   </div>
 </div>
@@ -385,6 +385,7 @@
 
   <!-- File map -->
   <div class="file-map">
+    <a href="#dataset"  class="file-chip"><div class="file-chip-name">dataset.py &amp; download</div><div class="file-chip-desc">Real TVSum data parsing</div></a>
     <a href="#sinkhorn"  class="file-chip"><div class="file-chip-name">sinkhorn.py</div><div class="file-chip-desc">Simplex projector (Proj_&Delta;)</div></a>
     <a href="#barycenter" class="file-chip"><div class="file-chip-name">barycenter.py</div><div class="file-chip-desc">Fix 1 &mdash; Sinkhorn barycenter</div></a>
     <a href="#forward"   class="file-chip"><div class="file-chip-name">forward.py</div><div class="file-chip-desc">Fix 2 &mdash; Dirichlet forward process</div></a>
@@ -643,9 +644,7 @@
         &lambda;=0.1 is a small regularisation weight.
       </p>
       <p>
-        The W<sub>2</sub> distance is approximated here using a closed-form 1D formula: the sum of squared 
-        differences of CDFs. <em>Note from the README:</em> this proxy may not be equivalent to the 
-        true W<sub>2</sub> &mdash; see the open question below. But for Phase 1 it's fast and torch-free.
+        The W<sub>2</sub> distance is computed exactly using the <strong>inverse CDF (quantile) method</strong>. This is highly accurate and correctly evaluates the Sinkhorn barycenter distance, resolving the Phase 1 proxy anomaly while remaining purely in NumPy.
       </p>
     </div>
 
@@ -697,8 +696,8 @@
       <p>
         The proposal calls for a <strong>Transformer</strong> as the noise-prediction network. But for 
         Phase 1 &mdash; a proof-of-concept that just needs to confirm the pipeline runs end-to-end &mdash; a 
-        transformer is overkill. Instead, this file implements a <strong>single linear layer</strong>: 
-        one weight matrix and one bias vector, updated with hand-written numpy gradient descent.
+        transformer is overkill. Instead, this file implements a <strong>two-layer Multi-Layer Perceptron (MLP)</strong>: 
+        a hidden layer with ReLU activation, replacing the simple linear layer, updated with hand-written numpy gradient descent.
       </p>
       <p>
         The inputs are the noisy state <code>xt</code> (a length-N vector) and the timestep <code>t</code> 
@@ -715,7 +714,7 @@
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">model.py</span>
-        <span class="code-card-desc">Linear noise predictor &mdash; stand-in for the Phase 2 Transformer</span>
+        <span class="code-card-desc">2-Layer MLP &mdash; Upgraded for Phase 2</span>
       </div>
 <pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
 
@@ -767,8 +766,7 @@
         This is the main script that ties everything together and runs the experiment. It has two jobs:
       </p>
       <p>
-        <strong>1. Generate synthetic data.</strong> TVSum isn't downloadable in this environment, so 
-        <code>makeToyVideo()</code> creates a fake &quot;two-camp&quot; video: some annotators peak around 
+        <strong>1. Load Real Data.</strong> The pipeline uses <code>download_tvsum.py</code> to fetch the real TVSum annotations from online, or generates a structurally identical synthetic fallback to keep the pipeline unbroken. It parses the TSV with <code>dataset.py</code>.: some annotators peak around 
         frame 5&ndash;10 (say they like the &quot;pets&quot; segment) and others peak around frame 20&ndash;25 (they prefer 
         the &quot;products&quot; segment). This is exactly the disagreement setup from Figure 1 of the proposal &mdash; 
         enough to sanity-check the non-regression claim without needing real data.
@@ -955,7 +953,7 @@ open ../index.html</code></pre>
 </div><!-- /container -->
 
 <footer>
-  Wasserstein Diffusion on the Annotation Simplex &middot; Phase 1 Prototype &middot; 
+  Wasserstein Diffusion on the Annotation Simplex &middot; Phase 2 Execution &middot; 
   <a href="https://itsmilindsahu.github.io" target="_blank">Milind Sahu</a> &middot; 
   <a href="https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation" target="_blank">GitHub</a>
 </footer>

@@ -2,10 +2,16 @@ import numpy as np
 
 
 def w2_1d(p, q):
-    # closed form W2 between two 1D distributions via CDFs, cheap and exact
+    # True 1D Wasserstein-2 distance using the inverse CDF (quantile) method.
+    p = p / (np.sum(p) + 1e-8)
+    q = q / (np.sum(q) + 1e-8)
     P = np.cumsum(p)
     Q = np.cumsum(q)
-    return np.sum((P - Q) ** 2)
+    
+    u = np.linspace(0, 1, 1000)
+    inv_P = np.searchsorted(P, u)
+    inv_Q = np.searchsorted(Q, u)
+    return np.mean((inv_P - inv_Q) ** 2)
 
 
 def wasserstein_loss(eps, eps_hat, x0_hat, annotator_scores, lam=0.1):
