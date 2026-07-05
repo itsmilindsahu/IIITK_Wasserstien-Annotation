@@ -15,18 +15,23 @@ class NoisePredictor:
     def forward(self, xt, t):
         tt = t / 200.0
         self.h = np.maximum(0, xt @ self.W1 + self.b1 * tt) # ReLU
-        return self.h @ self.W2 + self.b2 * tt
+        self.logits = self.h @ self.W2 + self.b2 * tt
+        
+        # Softmax ensures valid probability distribution
+        exp_L = np.exp(self.logits - np.max(self.logits))
+        self.out = exp_L / np.sum(exp_L)
+        return self.out
 
-    def step(self, xt, t, target):
-        pred = self.forward(xt, t)
+    def step(self, xt, t, gradOut):
+        # Backprop through Softmax
+        grad_logits = self.out * (gradOut - np.sum(self.out * gradOut))
+        
         tt = t / 200.0
         
-        gradOut = 2 * (pred - target) / self.N
+        gW2 = np.outer(self.h, grad_logits)
+        gb2 = grad_logits * tt
         
-        gW2 = np.outer(self.h, gradOut)
-        gb2 = gradOut * tt
-        
-        grad_h = gradOut @ self.W2.T
+        grad_h = grad_logits @ self.W2.T
         grad_h[self.h <= 0] = 0 # ReLU derivative
         
         gW1 = np.outer(xt, grad_h)
@@ -36,4 +41,4 @@ class NoisePredictor:
         self.b1 -= self.lr * gb1
         self.W2 -= self.lr * gW2
         self.b2 -= self.lr * gb2
-        return pred
+        return self.out

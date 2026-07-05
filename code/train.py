@@ -62,14 +62,37 @@ def run_config(annotator_scores, mode="mine", steps=80, T=200):
 
         if mode == "mine":
             eps_hat = net.forward(xt, t)
-            loss, mse, w2 = wasserstein_loss(eps, eps_hat, eps_hat, annotator_scores, lam=0.1)
+            
+            # 1. MSE gradient
+            grad_mse = 2 * (eps_hat - eps) / N
+            
+            # 2. W2 gradient using Cramer distance (CDF difference) which is differentiable
+            P = np.cumsum(eps_hat)
+            grad_w2 = np.zeros_like(eps_hat)
+            for a in annotator_scores:
+                Q = np.cumsum(a)
+                diff = P - Q
+                # Gradient of sum(diff^2): 2 * diff sum over future elements
+                grad_w2 += 2 * np.cumsum(diff[::-1])[::-1]
+            grad_w2 /= K
+            
+            lam = 0.1
+            gradOut = grad_mse + lam * grad_w2
+            
+            loss, mse, w2 = wasserstein_loss(eps, eps_hat, eps_hat, annotator_scores, lam=lam)
+            net.step(xt, t, gradOut)
         else:
             eps_hat = net.forward(xt, t)
+            
+            grad_mse = 2 * (eps_hat - eps) / N
+            gradOut = grad_mse
+            
             mse = np.mean((eps - eps_hat) ** 2)
             loss = mse
             w2 = 0.0
+            
+            net.step(xt, t, gradOut)
 
-        net.step(xt, t, eps)
         losses.append(float(loss))
         if step % 20 == 0:
             print(f"[{mode}] step {step} loss {loss:.4f}")
