@@ -9,23 +9,35 @@ def cost_matrix(N):
     return C / C.max()
 
 
-def wasserstein_barycenter(annotator_scores, n_iter=40, reg=0.05):
-    """K x N annotator score matrix -> 1 x N barycenter on the simplex."""
+def wasserstein_barycenter(annotator_scores, n_iter=None, reg=None):
+    """
+    K x N annotator score matrix -> 1 x N exact 1D W2 barycenter.
+    In 1D, the true Wasserstein-2 barycenter is computed exactly by averaging the inverse CDFs.
+    This entirely replaces the blurry Entropic Sinkhorn approximation!
+    """
     K, N = annotator_scores.shape
-    C = cost_matrix(N)
-    Kmat = np.exp(-C / reg)
-
-    u = np.ones((K, N))
-    bary = np.ones(N) / N
-
-    for it in range(n_iter):
-        v = annotator_scores / (Kmat.T @ u.T).T.clip(1e-16)
-        Ku = (Kmat @ v.T).T
-        bary = np.exp(np.mean(np.log(Ku * u + 1e-16), axis=0))
-        bary = sinkhorn_projection(bary, n_iter=1)
-        u = bary[None, :] / Ku.clip(1e-16)
-
-    return bary
+    
+    # Grid of quantiles
+    u = np.linspace(0, 1, 10000)
+    avg_inv_cdf = np.zeros(10000)
+    
+    for k in range(K):
+        a = annotator_scores[k]
+        a = a / (np.sum(a) + 1e-8)
+        P = np.cumsum(a)
+        inv_P = np.searchsorted(P, u)
+        avg_inv_cdf += inv_P
+        
+    avg_inv_cdf /= K
+    
+    # Convert average inverse CDF back into a PDF on the simplex
+    bary = np.zeros(N)
+    for val in avg_inv_cdf:
+        idx = int(round(val))
+        idx = min(max(idx, 0), N - 1)
+        bary[idx] += 1
+        
+    return bary / (np.sum(bary) + 1e-8)
 
 
 def arithmetic_mean(annotator_scores):
