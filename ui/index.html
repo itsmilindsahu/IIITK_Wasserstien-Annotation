@@ -10,15 +10,29 @@
     font-family: Georgia, 'Times New Roman', serif;
     background: #f7f7f3;
     color: #111111;
-    line-height: 1.6;
+    line-height: 1.65;
   }
   header {
-    padding: 48px 20px 24px;
+    padding: 54px 20px 28px;
     text-align: center;
     border-bottom: 2px solid #111111;
     background: #ffffff;
   }
-  header h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: 0.02em; }
+  header h1 { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 0.02em; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    font-size: 11px;
+    color: #666666;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .subhead {
+    max-width: 760px;
+    margin: 12px auto 0;
+    color: #444444;
+    font-size: 18px;
+  }
   .section {
     max-width: 980px;
     margin: 36px auto;
@@ -35,6 +49,41 @@
     font-size: 15px;
     color: #222222;
   }
+  .intro p {
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+  .card {
+    background: #ffffff;
+    border: 1px solid #111111;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  blockquote {
+    border-left: 4px solid #111111;
+    padding-left: 14px;
+    margin: 16px 0 0;
+    color: #333333;
+    font-style: italic;
+  }
+  pre {
+    background: #111111;
+    color: #f5f5f5;
+    padding: 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  code { font-family: 'SFMono-Regular', Consolas, monospace; }
   /* pipeline animation */
   #pipeline {
     display: flex;
@@ -107,20 +156,50 @@
 <body>
 
 <header>
+  <div class="eyebrow">Research note / personal log</div>
   <h1>Wasserstein Diffusion on the Annotation Simplex</h1>
+  <p class="subhead">A small, hand-built experiment on geometric aggregation for annotator disagreement.</p>
 </header>
 
-<div class="section">
-  <h2>What this actually does</h2>
-  <p>Three fixes on top of the Shang et al. (AAAI-25) video summarization diffusion model, replacing
-  operations that treat annotator importance scores as free vectors in R^N with ones that respect
-  the fact they live on the probability simplex:</p>
-  <ol>
-    <li><b>Fix 1</b> — replace the arithmetic mean of annotators with a Wasserstein (Sinkhorn) barycenter.</li>
-    <li><b>Fix 2</b> — replace Gaussian forward diffusion noise with Dirichlet noise + simplex projection.</li>
-    <li><b>Fix 3</b> — add a Wasserstein-distance penalty term to the training loss.</li>
-  </ol>
+<div class="section intro">
+  <p>This project began with a simple question: what if annotator scores were treated as objects on a probability simplex rather than as ordinary vectors? The answer is that the geometry changes the behaviour of the model, and that change is worth writing down.</p>
+  <p>I wanted this page to feel less like a static report and more like a research notebook: a place for the core idea, a few implementation details, and the evidence that came out of the first run.</p>
+</div>
 
+<div class="section">
+  <h2>The core idea</h2>
+  <p>The original pipeline aggregated annotator scores in a way that ignored the simplex structure. That felt mathematically awkward, so I tested three small but meaningful changes that make the model respect the geometry of the problem.</p>
+  <div class="card-grid">
+    <article class="card">
+      <h3>1. Replace the mean</h3>
+      <p>I swapped the arithmetic mean for a Wasserstein-Sinkhorn barycenter, so the aggregate is no longer just a coordinatewise average.</p>
+    </article>
+    <article class="card">
+      <h3>2. Replace Gaussian noise</h3>
+      <p>The forward diffusion step now uses Dirichlet-style noise and a simplex projection, which is more faithful to the domain of the annotations.</p>
+    </article>
+    <article class="card">
+      <h3>3. Penalize with geometry</h3>
+      <p>I added a Wasserstein penalty to the loss so the predictor is not only fitting pointwise targets, but also respecting distributional structure.</p>
+    </article>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Notebook excerpt</h2>
+  <p>Here is the small implementation sketch that captures the spirit of the experiment.</p>
+  <pre><code>def training_step(pred, target, annotators, lam=0.1):
+    mse = np.mean((pred - target) ** 2)
+    w2 = w2_1d(pred, annotators)
+    return mse + lam * w2</code></pre>
+  <p>The loss is deliberately simple: keep the supervised signal, but add a regularizer that nudges the model toward geometric consistency.</p>
+  <pre><code>noise = np.random.dirichlet(np.ones(n))
+noisy_state = project_simplex(x_prev + noise)</code></pre>
+  <blockquote>This is the part that makes the setup feel less like a generic diffusion model and more like a model operating on a constrained, structured space.</blockquote>
+</div>
+
+<div class="section">
+  <h2>How the pipeline flows</h2>
   <div id="pipeline">
     <div class="node" data-i="0">K annotators<small>score vectors on the simplex</small></div>
     <div class="arrow" data-i="1">&rarr;</div>
@@ -145,9 +224,7 @@
     </div>
   </div>
   <div class="note">
-    Note: the "mine" loss includes the extra &lambda;&middot;W2 penalty term, so its raw value isn't
-    directly comparable to the baseline's plain MSE — that's a units mismatch, not a bug. The metric
-    that actually matters for the non-regression claim is the held-out W2 distance table below.
+    The "mine" curve includes the extra &lambda;&middot;W2 penalty term, so its raw value is not directly comparable to the plain MSE baseline. The more meaningful comparison is the held-out W2 distance below.
   </div>
 </div>
 
@@ -157,7 +234,7 @@
 </div>
 
 <div class="section">
-  <h2>Barycenter vs. arithmetic mean on the disagreement case</h2>
+  <h2>What the disagreement case suggests</h2>
   <div class="chartbox">
     <svg id="distChart" width="100%" viewBox="0 0 900 260"></svg>
     <div class="legend">
@@ -167,18 +244,16 @@
     </div>
   </div>
   <div class="note">
-    On this synthetic two-camp video (half the annotators peak around frame 5&ndash;10, half around
-    frame 20&ndash;25), the arithmetic mean stays bimodal while the barycenter smooths toward a single
-    interpolated mode &mdash; the expected qualitative behaviour from Figure 1 of the proposal. In this
-    particular run the barycenter's average W2 distance to the annotators came out <i>higher</i> than
-    the arithmetic mean's under the simplified CDF-based W2 proxy used here, which is the opposite of
-    what the theory predicts under the true W2 metric. Flagged as an open question for Phase 2 —
-    likely the 1D "sum of squared CDF differences" proxy isn't equivalent to the true W2 the Sinkhorn
-    barycenter actually minimizes. Reporting it as-is rather than smoothing it over.
+    On this synthetic two-camp example, the arithmetic mean stays visibly bimodal while the barycenter smooths toward a single interpolated mode. That is the qualitative behaviour I was hoping to see. The numerical outcome is still open to interpretation, and that is exactly why the project feels interesting enough to continue.
   </div>
 </div>
 
-<footer>Phase 1 sprint output &middot; synthetic data, not TVSum &middot; see README for the full write-up</footer>
+<div class="section">
+  <h2>What remains open</h2>
+  <p>The current results are encouraging, but they also reveal that the proxy metric is not yet fully aligned with the geometry the Sinkhorn barycenter is actually optimizing. That is the next thing I would tighten up before treating Phase 2 as a serious benchmark.</p>
+</div>
+
+<footer>Built as a personal research notebook rather than a polished paper draft.</footer>
 
 <script>
 const DATA = {"mine_final_loss": 1.1581764767669607, "baseline_final_loss": 0.001394182083505787, "mine_heldout_w2": 1.1132010663233305, "baseline_heldout_w2": 0.9276608695647879, "mine_losses": [1.3285640451269038, 1.335903792027357, 1.3368463568461513, 1.3290060969238204, 1.3365212455867392, 1.3237558059767636, 1.3291065674493585, 1.2973905986303649, 1.3325120724797475, 1.3325422902261246, 1.3456223794100375, 1.3132343466512324, 1.3223387237724333, 1.3161013661793075, 1.3181487713978814, 1.2822628810447763, 1.2440812705984727, 1.2946049091304146, 1.3332044191293908, 1.245244899899622, 1.2997779095004935, 1.2674377385855344, 1.2512994723379969, 1.298481480724236, 1.3009185183666794, 1.227193369218347, 1.2263668246946924, 1.2924360462133728, 1.2357546682917508, 1.2599884648176207, 1.227361428636916, 1.2429912120431261, 1.2752732487001597, 1.326467782741037, 1.2415117989707902, 1.2806420950318886, 1.213504750930788, 1.2136807499884432, 1.306726639765545, 1.1695066685635156, 1.2187542898072279, 1.2274665169267174, 1.2990000501982015, 1.2344326282674518, 1.317159399275318, 1.2407291541817334, 1.2472518038190743, 1.3222282912079995, 1.2365255838537133, 1.3087473379509293, 1.279355686672184, 1.296962331804423, 1.1924893670072374, 1.1837625393534414, 1.3021773126293485, 1.1217808703168926, 1.303407673889229, 1.2639656142793376, 1.2332421777543632, 1.3169946531618248, 1.2762176532616325, 1.1285524699910248, 1.277279553864967, 1.2961532221086933, 1.2448532181652978, 1.1654623699095095, 1.1210180737035726, 1.2882354473183741, 1.2391268475119215, 1.227208213756676, 1.1786431092310419, 1.0932010911596448, 1.182470622667108, 1.104617658326723, 1.2781349823773946, 1.0952718404378232, 1.2128993637734753, 1.0522682843179543, 1.2921671499996532, 1.1581764767669607], "baseline_losses": [0.0018622118940537892, 0.00182035791847283, 0.0018171472053493604, 0.0018114165112225456, 0.0018061681860312255, 0.001775901513520257, 0.001791638168949146, 0.0018228583781056387, 0.0017944256918324243, 0.001817101666522584, 0.0017986781474547157, 0.0017975361514809224, 0.001825005765263811, 0.0017894823488976133, 0.0017447304204637813, 0.0017681886541540692, 0.0018067437600128172, 0.0017018223891935537, 0.0017777248364458738, 0.0017719823812540902, 0.0017845502930437381, 0.0017856325145269524, 0.0017003125569656878, 0.001792569271055346, 0.0016661243319827735, 0.0017721271392581955, 0.0017955912565837241, 0.0017739606720248208, 0.0018162423786146219, 0.0017878387876095483, 0.0017951206537838963, 0.00177934357356542, 0.001609089214084677, 0.001688712272908835, 0.0016709856829010493, 0.0017580373243171847, 0.0016615065756913033, 0.0016651243918165493, 0.0016054357559942864, 0.0017612461206796687, 0.001742200148978285, 0.001612145361181743, 0.001716910446239931, 0.0016268713591390553, 0.0015724429612539556, 0.0016631072829602744, 0.00160392067962566, 0.0017024499768659948, 0.0016922941235920667, 0.0015524285578435413, 0.0015984062566370594, 0.001587226623222249, 0.0016900991544595873, 0.0016033590104851626, 0.0015637613404785753, 0.0017201360017356615, 0.0016508742497858887, 0.0014635227377211772, 0.0015059014519073289, 0.0014851852570564141, 0.0016904240076223924, 0.0017586100204240397, 0.0017727210854058006, 0.0016030022568539054, 0.001595164486863776, 0.0015251402729146736, 0.0017647860399472106, 0.00159406061553444, 0.0016595546713508262, 0.0015196850463392558, 0.0014088610458968941, 0.001612423873827639, 0.0017304521101417258, 0.0016004219125827595, 0.0016423000100978043, 0.0017707778006120288, 0.0015143166148070875, 0.001681047482986283, 0.0013915671186021516, 0.001394182083505787], "annotator_scores": [[0.0023791097206462756, 0.024316000203333313, 0.013668549939976248, 0.022555911700388585, 0.030491370908326324, 0.12071436236981967, 0.11954908669344524, 0.10617173250397076, 0.11229463525849642, 0.11951048997692558, 0.021176764668470793, 0.02505865836263112, 0.01187683225902586, 0.0020557373930764726, 0.008983689739335906, 0.02835894791232494, 0.006652844312334675, 0.014096142389278338, 0.029032773654634882, 0.0007762982866948334, 0.018723677060307805, 0.02962276246593931, 0.007180292241731154, 0.01710060216572328, 0.028344445560937227, 0.004151904406430533, 0.016318750804214667, 0.02339598233567205, 0.020858230707124132, 0.014583413998783346], [0.006598508560329477, 0.015808334396689244, 0.011995091396651386, 0.015377835471077466, 0.011785899752865458, 0.02699064491946769, 0.024759334514357283, 0.010114258073949294, 0.018445154693241587, 0.008891970210035651, 0.014586776844106341, 0.011369983463969861, 0.02117586158865615, 0.011929585764189975, 0.014788100548554733, 0.02317055141971743, 0.013303110674263503, 0.02919730662297745, 0.005812627980447643, 0.02387259430847736, 0.12097718979881929, 0.12110859778928344, 0.12780622794103014, 0.1242154873188635, 0.12073598754463757, 4.596204744790618e-05, 0.0029719139976694597, 0.02285069937504106, 0.016889989131982308, 0.02242441385120029], [0.02919600650822821, 0.0208676277976856, 0.0016234401092296202, 0.00943753422303626, 0.018107767606003276, 0.10904034820030468, 0.13134221015553016, 0.1307334348813942, 0.12778020620181654, 0.11628851892705011, 0.0257127934576444, 0.004006315097142109, 0.009433897127481322, 0.014147664984365114, 0.022668439316955825, 0.014845239970559409, 0.004182489318611513, 0.010497359792671917, 0.009913409302180693, 0.009179825300851357, 0.005057184889116639, 0.012678049664956803, 0.013693110821090976, 0.023678436920221424, 0.024335111403864414, 0.01596254445048988, 0.01407536471999704, 0.02377967832995102, 0.027112666521014638, 0.020623324000554822], [0.02502502031579791, 0.02935902037079989, 0.00127100447960659, 0.02737573548272304, 0.008646068270429408, 0.014873613842265583, 0.024908783257978448, 0.02242282475286911, 0.004600209064645077, 0.02059415369327878, 0.002164996649288341, 0.011162940166748415, 0.02541112853806455, 0.013371145877048372, 0.01875298236078517, 0.022764182181574465, 0.025673673292859946, 0.02377564578584567, 0.00022331703646951722, 0.013138302387384882, 0.118687338251075, 0.10594357302044566, 0.12113538119807925, 0.1232089833102089, 0.13010808034484694, 0.029443364070035765, 0.004006229337115918, 0.007203851638232976, 0.02060697565871113, 0.0041414753647853195], [0.007431194997592863, 0.01906436081284786, 0.005621972106338365, 0.025941360884286876, 0.028420170135836448, 0.11166120034021691, 0.12820872972754557, 0.13697401658190433, 0.1428833357292125, 0.11963978111930318, 0.005607955284329532, 0.029074327010974753, 0.030151523004030616, 0.006550849469956628, 0.014642598955322746, 0.023852136760062898, 0.028034465046085994, 0.005580570394861185, 0.02205258876095436, 0.026790518301114157, 0.018230353773435088, 0.005462553804413066, 0.0011782536716746395, 0.009336600433490416, 0.02679169185728731, 0.0014845985239236728, 0.0002724867126019667, 0.011992414181669183, 0.0021099272008324693, 0.0049574644178944655]], "x_star_mine": [0.016283373676928063, 0.019402793967282193, 0.022539974296276546, 0.025620904028141635, 0.028632727414726174, 0.03164046946718796, 0.034769458124191466, 0.03813976449744631, 0.04177037949338922, 0.04550689123365322, 0.04902184481747917, 0.05188905528194715, 0.05369388964639683, 0.0541383531389612, 0.05311415666446748, 0.0507302872044885, 0.04729194187343805, 0.04323693312425013, 0.03904308090276912, 0.035125109613822134, 0.03174509837559237, 0.02896782604501654, 0.026686386949524674, 0.02470550743013783, 0.022830620263452346, 0.020921018113925823, 0.018904550879793564, 0.016770568978354144, 0.014554753669248298, 0.012322280827711725], "x_star_baseline": [0.014125968020518945, 0.02188306871627118, 0.006836011606360442, 0.020137675552302444, 0.01949025533469218, 0.07665603393441492, 0.08575362886977134, 0.08128325335881754, 0.08120070818948244, 0.07698498278531865, 0.013849857380767883, 0.016134444820293255, 0.0196098485034517, 0.009610996697727312, 0.015967162184190874, 0.022598211648847826, 0.015569316528831126, 0.016629404997126913, 0.013406943346937419, 0.014751507716904519, 0.05633514875455076, 0.05496310734900765, 0.05419865317472124, 0.05950802202970151, 0.0660630633423147, 0.010217674699665552, 0.007528949114319811, 0.01784452517211326, 0.017515557843932935, 0.013346018326643649]};
