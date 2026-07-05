@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wasserstein Diffusion on the Annotation Simplex ΓÇö Milind Sahu</title>
+  <title>Wasserstein Diffusion on the Annotation Simplex &mdash; Milind Sahu</title>
   <meta name="description" content="Phase 1 proof-of-concept: Wasserstein Diffusion on the Annotation Simplex. Every code file explained in plain English by Milind Sahu.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -304,13 +304,13 @@
 <!-- ΓöÇΓöÇ HERO ΓöÇΓöÇ -->
 <div class="hero">
   <div class="container">
-    <div class="hero-label">ΓÇö Project Walkthrough ┬╖ Phase 1 Prototype</div>
+    <div class="hero-label">&mdash; Project Walkthrough &middot; Phase 1 Prototype</div>
     <h1>Wasserstein Diffusion<br><span>on the Annotation Simplex</span></h1>
     <div class="hero-meta">
-      <div><span class="dot"></span> IIITKottayam ┬╖ CSE</div>
+      <div><span class="dot"></span> IIITKottayam &middot; CSE</div>
       <div><span class="dot orange"></span> Dr. Priyadarshni</div>
-      <div><span class="dot blue"></span> Jan 2025 ΓÇô May 2026</div>
-      <div><span class="dot"></span> Phase 1 ┬╖ June ΓÇô July 2026</div>
+      <div><span class="dot blue"></span> Jan 2025 &ndash; May 2026</div>
+      <div><span class="dot"></span> Phase 1 &middot; June &ndash; July 2026</div>
     </div>
   </div>
 </div>
@@ -325,14 +325,14 @@
   </div>
   <div class="prose">
     <p>
-      The standard way to combine multiple annotators' video importance scores is to just <strong>average them</strong> ΓÇö 
+      The standard way to combine multiple annotators' video importance scores is to just <strong>average them</strong> &mdash; 
       but that arithmetic mean lives in unconstrained Euclidean space and ignores the fact that importance 
       scores are probability distributions (they must sum to 1 and stay non-negative). When annotators 
       strongly disagree, the mean can produce a bimodal "ghost" distribution that no annotator actually intended.
     </p>
     <p>
       This project implements <strong>three geometric fixes</strong> on top of the Shang et al. (AAAI-25) 
-      video summarisation diffusion model, so every operation stays on the <em>probability simplex ╬ö</em>:
+      video summarisation diffusion model, so every operation stays on the <em>probability simplex &Delta;</em>:
     </p>
   </div>
 
@@ -340,7 +340,7 @@
     <div style="background:var(--bg2);padding:1.25rem 1.5rem;">
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;">Fix 1</div>
       <div style="font-size:12.5px;color:var(--text);font-weight:700;margin-bottom:0.4rem;">Wasserstein Barycenter</div>
-      <div style="font-size:11.5px;color:var(--text3);">Replace arithmetic mean with an entropic Sinkhorn barycenter ΓÇö the true geometric center of distributions.</div>
+      <div style="font-size:11.5px;color:var(--text3);">Replace arithmetic mean with an entropic Sinkhorn barycenter &mdash; the true geometric center of distributions.</div>
     </div>
     <div style="background:var(--bg2);padding:1.25rem 1.5rem;border-left:1px solid var(--border);">
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:0.5rem;">Fix 2</div>
@@ -364,31 +364,31 @@
     <p>Each step in the pipeline corresponds to one module in the codebase. Click <strong>Run Pipeline</strong> to watch them activate in order.</p>
   </div>
   <div id="pipeline">
-    <div class="p-node" data-i="0">K Annotators<small>score vectors on ╬ö</small></div>
-    <div class="p-arrow" data-i="1">ΓåÆ</div>
-    <div class="p-node" data-i="2">Barycenter<small>Fix 1 ┬╖ sinkhorn OT</small></div>
-    <div class="p-arrow" data-i="3">ΓåÆ</div>
-    <div class="p-node" data-i="4">Dirichlet Fwd<small>Fix 2 ┬╖ noise + Proj<sub>╬ö</sub></small></div>
-    <div class="p-arrow" data-i="5">ΓåÆ</div>
+    <div class="p-node" data-i="0">K Annotators<small>score vectors on &Delta;</small></div>
+    <div class="p-arrow" data-i="1">&rArr;</div>
+    <div class="p-node" data-i="2">Barycenter<small>Fix 1 &middot; sinkhorn OT</small></div>
+    <div class="p-arrow" data-i="3">&rArr;</div>
+    <div class="p-node" data-i="4">Dirichlet Fwd<small>Fix 2 &middot; noise + Proj<sub>&Delta;</sub></small></div>
+    <div class="p-arrow" data-i="5">&rArr;</div>
     <div class="p-node" data-i="6">Noise Predictor<small>linear net (phase 1)</small></div>
-    <div class="p-arrow" data-i="7">ΓåÆ</div>
-    <div class="p-node" data-i="8">W2 Loss<small>Fix 3 ┬╖ MSE + ╬╗┬╖WΓéé</small></div>
+    <div class="p-arrow" data-i="7">&rArr;</div>
+    <div class="p-node" data-i="8">W2 Loss<small>Fix 3 &middot; MSE + &lambda;&middot;WΓéé</small></div>
   </div>
   <button id="playBtn" onclick="playPipeline()">&#9654; Run Pipeline</button>
 
   <!-- ΓöÇΓöÇ CODE SECTION ΓöÇΓöÇ -->
   <div id="code" class="section-header" style="margin-top:3rem;">
     <span class="num">02</span>
-    <h2>Code ΓÇö Every File Explained</h2>
+    <h2>Code &mdash; Every File Explained</h2>
     <div class="line"></div>
   </div>
 
   <!-- File map -->
   <div class="file-map">
-    <a href="#sinkhorn"  class="file-chip"><div class="file-chip-name">sinkhorn.py</div><div class="file-chip-desc">Simplex projector (Proj_╬ö)</div></a>
-    <a href="#barycenter" class="file-chip"><div class="file-chip-name">barycenter.py</div><div class="file-chip-desc">Fix 1 ΓÇö Sinkhorn barycenter</div></a>
-    <a href="#forward"   class="file-chip"><div class="file-chip-name">forward.py</div><div class="file-chip-desc">Fix 2 ΓÇö Dirichlet forward process</div></a>
-    <a href="#losses"    class="file-chip"><div class="file-chip-name">losses.py</div><div class="file-chip-desc">Fix 3 ΓÇö W2 training loss</div></a>
+    <a href="#sinkhorn"  class="file-chip"><div class="file-chip-name">sinkhorn.py</div><div class="file-chip-desc">Simplex projector (Proj_&Delta;)</div></a>
+    <a href="#barycenter" class="file-chip"><div class="file-chip-name">barycenter.py</div><div class="file-chip-desc">Fix 1 &mdash; Sinkhorn barycenter</div></a>
+    <a href="#forward"   class="file-chip"><div class="file-chip-name">forward.py</div><div class="file-chip-desc">Fix 2 &mdash; Dirichlet forward process</div></a>
+    <a href="#losses"    class="file-chip"><div class="file-chip-name">losses.py</div><div class="file-chip-desc">Fix 3 &mdash; W2 training loss</div></a>
     <a href="#model"     class="file-chip"><div class="file-chip-name">model.py</div><div class="file-chip-desc">Noise predictor network</div></a>
     <a href="#train"     class="file-chip"><div class="file-chip-name">train.py</div><div class="file-chip-desc">Training loop + results</div></a>
   </div>
@@ -405,18 +405,18 @@
     <div class="explain">
       <div class="explain-label">plain english</div>
       <p>
-        This is the <strong>simplex projector</strong> ΓÇö a small utility that takes any vector (which might have 
+        This is the <strong>simplex projector</strong> &mdash; a small utility that takes any vector (which might have 
         negative numbers or not sum to 1) and forces it back onto the probability simplex, i.e. makes it a valid 
         probability distribution.
       </p>
       <p>
         It does this in two cheap steps repeated a handful of times: first it <strong>clips every negative value to 
         a tiny positive number</strong> (you can't have negative probability), then it <strong>divides by the 
-        total sum</strong> so everything adds up to exactly 1. That's it ΓÇö no optimisation, no matrix inversions.
+        total sum</strong> so everything adds up to exactly 1. That's it &mdash; no optimisation, no matrix inversions.
       </p>
       <p>
         The comment in the file is honest about naming: the proposal calls this step "Sinkhorn projection" 
-        (Proj_╬ö), but the actual Sinkhorn algorithm ΓÇö the fancy iterative OT solver ΓÇö lives in 
+        (Proj_&Delta;), but the actual Sinkhorn algorithm &mdash; the fancy iterative OT solver &mdash; lives in 
         <code>barycenter.py</code>. This file is just clip+renorm.
       </p>
     </div>
@@ -424,12 +424,12 @@
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">sinkhorn.py</span>
-        <span class="code-card-desc">Proj_╬ö: clip negatives ΓåÆ renorm to sum=1</span>
+        <span class="code-card-desc">Proj_&Delta;: clip negatives &rArr; renorm to sum=1</span>
       </div>
 <pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
 
 <span class="cm"># Quick simplex projector. Called "sinkhorn" because the proposal calls
-# the Proj_delta step that name ΓÇö the actual Sinkhorn OT solver lives in
+# the Proj_delta step that name &mdash; the actual Sinkhorn OT solver lives in
 # barycenter.py. This is just clip + renorm.</span>
 <span class="kw">def</span> <span class="fn">sinkhorn_projection</span>(<span class="param">x</span>, <span class="param">n_iter</span>=<span class="num">5</span>):
     x = np.array(x, dtype=float)
@@ -442,7 +442,7 @@
 <span class="kw">def</span> <span class="fn">test</span>():
     v = np.array([<span class="num">0.5</span>, <span class="num">-0.2</span>, <span class="num">0.9</span>, <span class="num">0.0</span>])
     out = <span class="fn">sinkhorn_projection</span>(v)
-    <span class="fn">print</span>(out, out.sum())  <span class="cm"># ΓåÆ [0.29 0.0 0.52 0.0] 1.0 roughly</span>
+    <span class="fn">print</span>(out, out.sum())  <span class="cm"># &rArr; [0.29 0.0 0.52 0.0] 1.0 roughly</span>
 
 <span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
     <span class="fn">test</span>()</code></pre>
@@ -450,9 +450,9 @@
 
     <div class="explain">
       <div class="explain-label">line by line</div>
-      <p><strong>clip(x, 1e-8, None)</strong> ΓÇö sets any value below 1e-8 to 1e-8, removing negatives while keeping everything strictly positive (needed for log() calls downstream).</p>
-      <p><strong>x / x.sum()</strong> ΓÇö divides every element by the total so the vector sums to exactly 1. Running this in a short loop ensures numerical stability (a single pass is fine in practice).</p>
-      <p><strong>n_iter=5</strong> ΓÇö repeated 5 times by default. After clipping and renorming once the vector is already on the simplex; extra iterations are just a cheap stability guard.</p>
+      <p><strong>clip(x, 1e-8, None)</strong> &mdash; sets any value below 1e-8 to 1e-8, removing negatives while keeping everything strictly positive (needed for log() calls downstream).</p>
+      <p><strong>x / x.sum()</strong> &mdash; divides every element by the total so the vector sums to exactly 1. Running this in a short loop ensures numerical stability (a single pass is fine in practice).</p>
+      <p><strong>n_iter=5</strong> &mdash; repeated 5 times by default. After clipping and renorming once the vector is already on the simplex; extra iterations are just a cheap stability guard.</p>
     </div>
   </div>
 
@@ -472,9 +472,9 @@
         all the annotators at once?"</strong>
       </p>
       <p>
-        The naive answer is the arithmetic mean ΓÇö just add them up and divide. But the arithmetic mean 
+        The naive answer is the arithmetic mean &mdash; just add them up and divide. But the arithmetic mean 
         lives in Euclidean space and ignores the shape of the distributions. If half the annotators peak 
-        around frame 5 and half peak around frame 22, the arithmetic mean peaks at both ΓÇö a bimodal blob 
+        around frame 5 and half peak around frame 22, the arithmetic mean peaks at both &mdash; a bimodal blob 
         that no annotator intended.
       </p>
       <p>
@@ -483,7 +483,7 @@
         interpolated mode, rather than smearing it across two modes.
       </p>
       <p>
-        The algorithm here is the <strong>entropic Sinkhorn barycenter</strong> ΓÇö an iterative algorithm 
+        The algorithm here is the <strong>entropic Sinkhorn barycenter</strong> &mdash; an iterative algorithm 
         that alternately updates scaling vectors <em>u, v</em> and renorms the barycenter until 
         convergence. It uses only numpy (no POT library), kept to ~15 lines on purpose.
       </p>
@@ -492,7 +492,7 @@
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">barycenter.py</span>
-        <span class="code-card-desc">Fix 1 ΓÇö entropic Sinkhorn barycenter + arithmetic mean baseline</span>
+        <span class="code-card-desc">Fix 1 &mdash; entropic Sinkhorn barycenter + arithmetic mean baseline</span>
       </div>
 <pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
 <span class="kw">from</span> sinkhorn <span class="kw">import</span> sinkhorn_projection
@@ -506,10 +506,10 @@
 
 
 <span class="kw">def</span> <span class="fn">wasserstein_barycenter</span>(<span class="param">annotator_scores</span>, <span class="param">n_iter</span>=<span class="num">40</span>, <span class="param">reg</span>=<span class="num">0.05</span>):
-    <span class="str">"""K ├ù N annotator score matrix ΓåÆ 1 ├ù N barycenter on the simplex."""</span>
+    <span class="str">"""K &times; N annotator score matrix &rArr; 1 &times; N barycenter on the simplex."""</span>
     K, N = annotator_scores.shape
     C    = <span class="fn">cost_matrix</span>(N)
-    Kmat = np.exp(-C / reg)            <span class="cm"># Gibbs kernel  K = exp(-C/╬╡)</span>
+    Kmat = np.exp(-C / reg)            <span class="cm"># Gibbs kernel  K = exp(-C/&epsilon;)</span>
 
     u    = np.ones((K, N))
     bary = np.ones(N) / N              <span class="cm"># uniform start</span>
@@ -530,10 +530,10 @@
 
     <div class="explain">
       <div class="explain-label">line by line</div>
-      <p><strong>cost_matrix(N)</strong> ΓÇö builds an N├ùN matrix where entry (i,j) = (iΓêÆj)┬▓ / max. This is the "ground cost" of moving probability mass from frame i to frame j. Squaring means big jumps are penalised disproportionately.</p>
-      <p><strong>Kmat = exp(ΓêÆC/reg)</strong> ΓÇö the Gibbs kernel. The regularisation parameter <code>reg=0.05</code> controls how blurry the optimal transport plan is. Smaller reg = sharper (harder to compute), larger reg = more blurry but faster convergence.</p>
-      <p><strong>The loop (40 iterations)</strong> ΓÇö alternates two Sinkhorn scaling steps. <code>v</code> matches each annotator's marginal; <code>Ku</code> is the transported version; <code>bary</code> is updated as the geometric mean of the scaled kernels, then projected back to the simplex. This is the standard free-support Sinkhorn barycenter algorithm.</p>
-      <p><strong>arithmetic_mean</strong> ΓÇö kept for direct comparison. One line, dead simple, and geometrically wrong for distributions with different support.</p>
+      <p><strong>cost_matrix(N)</strong> &mdash; builds an N&times;N matrix where entry (i,j) = (i&minus;j)&sup2; / max. This is the "ground cost" of moving probability mass from frame i to frame j. Squaring means big jumps are penalised disproportionately.</p>
+      <p><strong>Kmat = exp(&minus;C/reg)</strong> &mdash; the Gibbs kernel. The regularisation parameter <code>reg=0.05</code> controls how blurry the optimal transport plan is. Smaller reg = sharper (harder to compute), larger reg = more blurry but faster convergence.</p>
+      <p><strong>The loop (40 iterations)</strong> &mdash; alternates two Sinkhorn scaling steps. <code>v</code> matches each annotator's marginal; <code>Ku</code> is the transported version; <code>bary</code> is updated as the geometric mean of the scaled kernels, then projected back to the simplex. This is the standard free-support Sinkhorn barycenter algorithm.</p>
+      <p><strong>arithmetic_mean</strong> &mdash; kept for direct comparison. One line, dead simple, and geometrically wrong for distributions with different support.</p>
     </div>
   </div>
 
@@ -552,17 +552,17 @@
         Diffusion models work by progressively adding noise to the data, then training a network to reverse 
         the process. The original model uses <strong>Gaussian noise</strong>. The problem: Gaussian noise 
         can push values negative or make them sum to something other than 1, which means the noisy state 
-        is no longer a valid distribution ΓÇö it has left the simplex.
+        is no longer a valid distribution &mdash; it has left the simplex.
       </p>
       <p>
         This file replaces Gaussian noise with <strong>Dirichlet noise</strong>. A Dirichlet sample is 
         always non-negative and already sums to 1, so it lives on the simplex by construction. After 
         mixing the signal <code>x_star</code> and the Dirichlet noise according to the cosine diffusion 
-        schedule, we apply the simplex projector from <code>sinkhorn.py</code> (the Proj_╬ö step) as an 
+        schedule, we apply the simplex projector from <code>sinkhorn.py</code> (the Proj_&Delta; step) as an 
         extra safety net to correct any floating-point drift.
       </p>
       <p>
-        The baseline forward step is kept alongside for comparison ΓÇö it uses Gaussian noise and only 
+        The baseline forward step is kept alongside for comparison &mdash; it uses Gaussian noise and only 
         does a crude clip+renorm, not a proper simplex projection.
       </p>
     </div>
@@ -570,21 +570,21 @@
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">forward.py</span>
-        <span class="code-card-desc">Fix 2 ΓÇö Dirichlet forward process + Gaussian baseline</span>
+        <span class="code-card-desc">Fix 2 &mdash; Dirichlet forward process + Gaussian baseline</span>
       </div>
 <pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
 <span class="kw">from</span> sinkhorn <span class="kw">import</span> sinkhorn_projection
 
 
 <span class="kw">def</span> <span class="fn">alpha_bar</span>(<span class="param">t</span>, <span class="param">T</span>=<span class="num">200</span>, <span class="param">s</span>=<span class="num">0.008</span>):
-    <span class="cm"># Standard cosine noise schedule ΓÇö same trick as image diffusion models.
-    # alpha_bar(0) Γëê 1 (pure signal), alpha_bar(T) Γëê 0 (pure noise).</span>
+    <span class="cm"># Standard cosine noise schedule &mdash; same trick as image diffusion models.
+    # alpha_bar(0) &asymp; 1 (pure signal), alpha_bar(T) &asymp; 0 (pure noise).</span>
     f = <span class="kw">lambda</span> tt: np.cos(((tt / T) + s) / (<span class="num">1</span> + s) * np.pi / <span class="num">2</span>) ** <span class="num">2</span>
     <span class="kw">return</span> f(t) / f(<span class="num">0</span>)
 
 
 <span class="kw">def</span> <span class="fn">dirichlet_noise</span>(<span class="param">N</span>, <span class="param">alpha</span>=<span class="num">1.0</span>):
-    <span class="cm"># Uniform Dirichlet sample ΓÇö always on the simplex.</span>
+    <span class="cm"># Uniform Dirichlet sample &mdash; always on the simplex.</span>
     <span class="kw">return</span> np.random.dirichlet(alpha * np.ones(N))
 
 
@@ -593,13 +593,13 @@
     delta = <span class="fn">dirichlet_noise</span>(<span class="fn">len</span>(x_star))
     <span class="cm"># Mix signal and noise according to the diffusion schedule</span>
     xt    = np.sqrt(ab) * x_star + np.sqrt(<span class="num">1</span> - ab) * delta
-    <span class="cm"># Proj_╬ö step ΓÇö brings xt back to the simplex (Equation 4 in proposal)</span>
+    <span class="cm"># Proj_&Delta; step &mdash; brings xt back to the simplex (Equation 4 in proposal)</span>
     xt    = <span class="fn">sinkhorn_projection</span>(xt, n_iter=<span class="num">3</span>)
     <span class="kw">return</span> xt
 
 
 <span class="kw">def</span> <span class="fn">forward_step_baseline</span>(<span class="param">x_star</span>, <span class="param">t</span>, <span class="param">T</span>=<span class="num">200</span>):
-    <span class="cm"># Original AAAI-25 style Gaussian forward ΓÇö kept for comparison</span>
+    <span class="cm"># Original AAAI-25 style Gaussian forward &mdash; kept for comparison</span>
     ab    = <span class="fn">alpha_bar</span>(t, T)
     noise = np.random.randn(<span class="fn">len</span>(x_star)) * <span class="num">0.1</span>
     xt    = np.sqrt(ab) * x_star + np.sqrt(<span class="num">1</span> - ab) * noise
@@ -611,10 +611,10 @@
 
     <div class="explain">
       <div class="explain-label">line by line</div>
-      <p><strong>alpha_bar(t, T)</strong> ΓÇö cosine noise schedule. At t=0 you get almost pure signal (╬▒╠àΓëê1); at t=T you get almost pure noise (╬▒╠àΓëê0). The cosine shape gives a smoother transition than a linear schedule and is standard in modern diffusion models (DDPM++, etc.).</p>
-      <p><strong>dirichlet_noise(N, alpha=1.0)</strong> ΓÇö draws a sample from a symmetric Dirichlet distribution with concentration 1.0. With alpha=1 this is the uniform distribution over the simplex ΓÇö every point on ╬ö is equally likely. This is the natural "maximum entropy" noise for simplex-valued data.</p>
-      <p><strong>np.sqrt(ab) * x_star + np.sqrt(1ΓêÆab) * delta</strong> ΓÇö the diffusion interpolation. As t grows, alpha_bar shrinks so the noise term dominates. The square-root ensures the variance is correct under the Gaussian-analogue derivation.</p>
-      <p><strong>forward_step_baseline</strong> ΓÇö the thing we are fixing. Notice the <code>clip(0, None)</code> plus manual renorm ΓÇö it gets the state back onto the simplex but has no theoretical justification for why that particular projection is the right one. Our Dirichlet version is principled.</p>
+      <p><strong>alpha_bar(t, T)</strong> &mdash; cosine noise schedule. At t=0 you get almost pure signal (&alpha;╠à&asymp;1); at t=T you get almost pure noise (&alpha;╠à&asymp;0). The cosine shape gives a smoother transition than a linear schedule and is standard in modern diffusion models (DDPM++, etc.).</p>
+      <p><strong>dirichlet_noise(N, alpha=1.0)</strong> &mdash; draws a sample from a symmetric Dirichlet distribution with concentration 1.0. With alpha=1 this is the uniform distribution over the simplex &mdash; every point on &Delta; is equally likely. This is the natural "maximum entropy" noise for simplex-valued data.</p>
+      <p><strong>np.sqrt(ab) * x_star + np.sqrt(1&minus;ab) * delta</strong> &mdash; the diffusion interpolation. As t grows, alpha_bar shrinks so the noise term dominates. The square-root ensures the variance is correct under the Gaussian-analogue derivation.</p>
+      <p><strong>forward_step_baseline</strong> &mdash; the thing we are fixing. Notice the <code>clip(0, None)</code> plus manual renorm &mdash; it gets the state back onto the simplex but has no theoretical justification for why that particular projection is the right one. Our Dirichlet version is principled.</p>
     </div>
   </div>
 
@@ -630,7 +630,7 @@
     <div class="explain">
       <div class="explain-label">plain english</div>
       <p>
-        The standard training loss is <strong>Mean Squared Error (MSE)</strong> ΓÇö it penalises the 
+        The standard training loss is <strong>Mean Squared Error (MSE)</strong> &mdash; it penalises the 
         model if its predicted noise vector differs from the target noise vector element-by-element. 
         But MSE treats all dimensions as independent and doesn't care about the shape of the 
         distribution. A prediction that shifts all probability mass two frames to the left gets the 
@@ -639,20 +639,20 @@
       <p>
         The Wasserstein loss adds a <strong>WΓéé distance term</strong> that does care about the 
         shape: it measures how far you'd have to move mass to transform the predicted distribution 
-        into each annotator's distribution. The final loss is <code>MSE + ╬╗ ├ù WΓéé</code>, where 
-        ╬╗=0.1 is a small regularisation weight.
+        into each annotator's distribution. The final loss is <code>MSE + &lambda; &times; WΓéé</code>, where 
+        &lambda;=0.1 is a small regularisation weight.
       </p>
       <p>
         The WΓéé distance is approximated here using a closed-form 1D formula: the sum of squared 
         differences of CDFs. <em>Note from the README:</em> this proxy may not be equivalent to the 
-        true WΓéé ΓÇö see the open question below. But for Phase 1 it's fast and torch-free.
+        true WΓéé &mdash; see the open question below. But for Phase 1 it's fast and torch-free.
       </p>
     </div>
 
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">losses.py</span>
-        <span class="code-card-desc">Fix 3 ΓÇö Wasserstein-regularised loss + plain MSE baseline</span>
+        <span class="code-card-desc">Fix 3 &mdash; Wasserstein-regularised loss + plain MSE baseline</span>
       </div>
 <pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
 
@@ -660,7 +660,7 @@
 <span class="kw">def</span> <span class="fn">w2_1d</span>(<span class="param">p</span>, <span class="param">q</span>):
     <span class="cm"># Closed-form W2 between two 1D distributions via CDFs.
     # True 1D W2 = integral of squared quantile differences.
-    # This proxy uses squared CDF differences ΓÇö see open question below.</span>
+    # This proxy uses squared CDF differences &mdash; see open question below.</span>
     P = np.cumsum(p)
     Q = np.cumsum(q)
     <span class="kw">return</span> np.sum((P - Q) ** <span class="num">2</span>)
@@ -676,10 +676,10 @@
 
     <div class="explain">
       <div class="explain-label">line by line</div>
-      <p><strong>np.cumsum(p)</strong> ΓÇö computes the Cumulative Distribution Function (CDF) of distribution p. The CDF at index k is the total probability mass in frames 0..k.</p>
-      <p><strong>sum((PΓêÆQ)┬▓)</strong> ΓÇö the squared L2 distance between the two CDFs. For 1D distributions, the true Wasserstein-2 distance is Γê½|FΓü╗┬╣(u)ΓêÆGΓü╗┬╣(u)|┬▓ du, which equals Γê½|F(x)ΓêÆG(x)|┬▓ dx only under specific conditions. The open question is whether the CDF formula used here matches what the Sinkhorn barycenter minimises.</p>
-      <p><strong>lam=0.1</strong> ΓÇö the regularisation coefficient ╬╗. Small enough that the MSE term still dominates training but the WΓéé penalty adds distributional shape awareness.</p>
-      <p><strong>wasserstein_loss returns (total, mse, w2)</strong> ΓÇö the three components are logged separately so we can check the gradient signal. The raw "mine" loss reported in charts includes the ╬╗┬╖WΓéé term, so it's numerically larger than the baseline MSE ΓÇö that's expected, not a bug.</p>
+      <p><strong>np.cumsum(p)</strong> &mdash; computes the Cumulative Distribution Function (CDF) of distribution p. The CDF at index k is the total probability mass in frames 0..k.</p>
+      <p><strong>sum((P&minus;Q)&sup2;)</strong> &mdash; the squared L2 distance between the two CDFs. For 1D distributions, the true Wasserstein-2 distance is &int;|FΓü╗┬╣(u)&minus;GΓü╗┬╣(u)|&sup2; du, which equals &int;|F(x)&minus;G(x)|&sup2; dx only under specific conditions. The open question is whether the CDF formula used here matches what the Sinkhorn barycenter minimises.</p>
+      <p><strong>lam=0.1</strong> &mdash; the regularisation coefficient &lambda;. Small enough that the MSE term still dominates training but the WΓéé penalty adds distributional shape awareness.</p>
+      <p><strong>wasserstein_loss returns (total, mse, w2)</strong> &mdash; the three components are logged separately so we can check the gradient signal. The raw "mine" loss reported in charts includes the &lambda;&middot;WΓéé term, so it's numerically larger than the baseline MSE &mdash; that's expected, not a bug.</p>
     </div>
   </div>
 
@@ -696,26 +696,26 @@
       <div class="explain-label">plain english</div>
       <p>
         The proposal calls for a <strong>Transformer</strong> as the noise-prediction network. But for 
-        Phase 1 ΓÇö a proof-of-concept that just needs to confirm the pipeline runs end-to-end ΓÇö a 
+        Phase 1 &mdash; a proof-of-concept that just needs to confirm the pipeline runs end-to-end &mdash; a 
         transformer is overkill. Instead, this file implements a <strong>single linear layer</strong>: 
         one weight matrix and one bias vector, updated with hand-written numpy gradient descent.
       </p>
       <p>
         The inputs are the noisy state <code>xt</code> (a length-N vector) and the timestep <code>t</code> 
         (a scalar). The network multiplies xt by the weight matrix, adds a bias scaled by the normalised 
-        timestep, and returns a predicted noise vector. The gradient update is just plain SGD ΓÇö no 
+        timestep, and returns a predicted noise vector. The gradient update is just plain SGD &mdash; no 
         momentum, no Adam.
       </p>
       <p>
         This is explicitly a <strong>stand-in</strong>. Swapping it out for the Transformer in Phase 2 
-        is not a config flag ΓÇö it requires proper architecture work.
+        is not a config flag &mdash; it requires proper architecture work.
       </p>
     </div>
 
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">model.py</span>
-        <span class="code-card-desc">Linear noise predictor ΓÇö stand-in for the Phase 2 Transformer</span>
+        <span class="code-card-desc">Linear noise predictor &mdash; stand-in for the Phase 2 Transformer</span>
       </div>
 <pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
 
@@ -724,7 +724,7 @@
 <span class="kw">class</span> <span class="cls">NoisePredictor</span>:
     <span class="kw">def</span> <span class="fn">__init__</span>(<span class="param">self</span>, <span class="param">N</span>, <span class="param">lr</span>=<span class="num">0.05</span>):
         <span class="param">self</span>.N  = N
-        <span class="param">self</span>.W  = np.random.randn(N, N) * <span class="num">0.01</span>   <span class="cm"># weight matrix N├ùN</span>
+        <span class="param">self</span>.W  = np.random.randn(N, N) * <span class="num">0.01</span>   <span class="cm"># weight matrix N&times;N</span>
         <span class="param">self</span>.b  = np.zeros(N)                     <span class="cm"># bias vector length N</span>
         <span class="param">self</span>.lr = lr                               <span class="cm"># learning rate</span>
 
@@ -744,11 +744,11 @@
 
     <div class="explain">
       <div class="explain-label">line by line</div>
-      <p><strong>W = randn(N,N) * 0.01</strong> ΓÇö small random initialisation. Multiplying by 0.01 keeps early predictions near zero, preventing exploding gradients at the start of training.</p>
-      <p><strong>forward: W @ xt + b * tt</strong> ΓÇö a linear projection of the noisy state xt, with bias modulated by the normalised timestep tt. The timestep conditioning is crude (just a scalar multiply on the bias) ΓÇö a real model would use sinusoidal position embeddings or learned timestep embeddings.</p>
-      <p><strong>step: gradOut = 2*(predΓêÆtarget)/N</strong> ΓÇö the MSE gradient at the output. The factor 2 comes from differentiating (predΓêÆtarget)┬▓, and dividing by N normalises by the number of frames.</p>
-      <p><strong>gW = outer(gradOut, xt)</strong> ΓÇö the gradient w.r.t. the weight matrix is the outer product of the output gradient and the input. This is the standard linear-layer backprop formula.</p>
-      <p><strong>self.W -= lr * gW</strong> ΓÇö vanilla SGD with no momentum. Works for a quick prototype; would need Adam or similar for the Transformer in Phase 2.</p>
+      <p><strong>W = randn(N,N) * 0.01</strong> &mdash; small random initialisation. Multiplying by 0.01 keeps early predictions near zero, preventing exploding gradients at the start of training.</p>
+      <p><strong>forward: W @ xt + b * tt</strong> &mdash; a linear projection of the noisy state xt, with bias modulated by the normalised timestep tt. The timestep conditioning is crude (just a scalar multiply on the bias) &mdash; a real model would use sinusoidal position embeddings or learned timestep embeddings.</p>
+      <p><strong>step: gradOut = 2*(pred&minus;target)/N</strong> &mdash; the MSE gradient at the output. The factor 2 comes from differentiating (pred&minus;target)&sup2;, and dividing by N normalises by the number of frames.</p>
+      <p><strong>gW = outer(gradOut, xt)</strong> &mdash; the gradient w.r.t. the weight matrix is the outer product of the output gradient and the input. This is the standard linear-layer backprop formula.</p>
+      <p><strong>self.W -= lr * gW</strong> &mdash; vanilla SGD with no momentum. Works for a quick prototype; would need Adam or similar for the Transformer in Phase 2.</p>
     </div>
   </div>
 
@@ -769,13 +769,13 @@
       <p>
         <strong>1. Generate synthetic data.</strong> TVSum isn't downloadable in this environment, so 
         <code>makeToyVideo()</code> creates a fake "two-camp" video: some annotators peak around 
-        frame 5ΓÇô10 (say they like the "pets" segment) and others peak around frame 20ΓÇô25 (they prefer 
-        the "products" segment). This is exactly the disagreement setup from Figure 1 of the proposal ΓÇö 
+        frame 5&ndash;10 (say they like the "pets" segment) and others peak around frame 20&ndash;25 (they prefer 
+        the "products" segment). This is exactly the disagreement setup from Figure 1 of the proposal &mdash; 
         enough to sanity-check the non-regression claim without needing real data.
       </p>
       <p>
-        <strong>2. Run both configurations</strong> ΓÇö mine (Fix 1+2+3) and baseline (arithmetic mean + 
-        Gaussian + MSE) ΓÇö then dump the results as JSON, a CSV, and a matplotlib loss-curve plot into 
+        <strong>2. Run both configurations</strong> &mdash; mine (Fix 1+2+3) and baseline (arithmetic mean + 
+        Gaussian + MSE) &mdash; then dump the results as JSON, a CSV, and a matplotlib loss-curve plot into 
         the <code>results/</code> folder.
       </p>
     </div>
@@ -783,14 +783,14 @@
     <div class="code-card">
       <div class="code-card-header">
         <span class="code-card-filename">train.py</span>
-        <span class="code-card-desc">Main training loop ΓÇö synthetic data, both configs, saves results/</span>
+        <span class="code-card-desc">Main training loop &mdash; synthetic data, both configs, saves results/</span>
       </div>
 <pre><code><span class="str">"""
-train.py ΓÇö Phase 1 sprint (proof of concept)
+train.py &mdash; Phase 1 sprint (proof of concept)
 
 TVSum isn't downloadable here so this uses synthetic toy annotator data
 that mimics the two-camp disagreement setup from Figure 1 of the proposal.
-Swap makeToyVideo() for a real TVSum loader for Phase 2 ΓÇö that's basically
+Swap makeToyVideo() for a real TVSum loader for Phase 2 &mdash; that's basically
 the whole Phase 2 step.
 """</span>
 <span class="kw">import</span> numpy <span class="kw">as</span> np, json, csv, os
@@ -805,7 +805,7 @@ np.random.seed(<span class="num">7</span>)   <span class="cm"># keeps results re
 
 <span class="kw">def</span> <span class="fn">makeToyVideo</span>(<span class="param">N</span>=<span class="num">30</span>, <span class="param">K</span>=<span class="num">5</span>, <span class="param">disagree</span>=<span class="kw">True</span>):
     <span class="cm"># Build K annotator distributions over N frames.
-    # disagree=True ΓåÆ half peak at frames 5ΓÇô10, half at 20ΓÇô25.</span>
+    # disagree=True &rArr; half peak at frames 5&ndash;10, half at 20&ndash;25.</span>
     scores = []
     <span class="kw">if</span> disagree:
         campA = np.zeros(N); campA[<span class="num">5</span>:<span class="num">10</span>] = <span class="num">1</span>   <span class="cm"># "pets" annotators</span>
@@ -857,11 +857,11 @@ np.random.seed(<span class="num">7</span>)   <span class="cm"># keeps results re
 
     <div class="explain">
       <div class="explain-label">line by line</div>
-      <p><strong>makeToyVideo(N=30, K=5)</strong> ΓÇö creates 5 annotator distributions over 30 frames. Even K annotators go to "camp A" (frames 5ΓÇô10), odd K to "camp B" (frames 20ΓÇô25). Gaussian noise (├ù0.3) is added before normalising so the distributions look realistic rather than perfectly spiky.</p>
-      <p><strong>np.random.seed(7)</strong> ΓÇö fixes the random seed so results are reproducible across runs. Not statistically rigorous (a real evaluation would sweep seeds), but necessary for a one-shot Phase 1 comparison.</p>
-      <p><strong>run_config(mode="mine" | "baseline")</strong> ΓÇö a single function handles both configurations. It picks the correct barycenter, forward process, and loss based on the mode flag, so the comparison is apples-to-apples (same data, same number of steps, same model architecture).</p>
+      <p><strong>makeToyVideo(N=30, K=5)</strong> &mdash; creates 5 annotator distributions over 30 frames. Even K annotators go to "camp A" (frames 5&ndash;10), odd K to "camp B" (frames 20&ndash;25). Gaussian noise (&times;0.3) is added before normalising so the distributions look realistic rather than perfectly spiky.</p>
+      <p><strong>np.random.seed(7)</strong> &mdash; fixes the random seed so results are reproducible across runs. Not statistically rigorous (a real evaluation would sweep seeds), but necessary for a one-shot Phase 1 comparison.</p>
+      <p><strong>run_config(mode="mine" | "baseline")</strong> &mdash; a single function handles both configurations. It picks the correct barycenter, forward process, and loss based on the mode flag, so the comparison is apples-to-apples (same data, same number of steps, same model architecture).</p>
       <p><strong>heldout_w2</strong> — after training, x_star is compared to all 20 annotators using the W² proxy. Results: <strong>mine = 0.6199 vs baseline = 0.6285</strong>. Wasserstein barycenter beats arithmetic mean by ~1.4%.</p>
-      <p><strong>results/ folder</strong> ΓÇö the script dumps <code>results.json</code> (baked into this page), <code>comparison.csv</code>, and <code>loss_curve.png</code> so the dashboard and charts can be generated without re-running training.</p>
+      <p><strong>results/ folder</strong> &mdash; the script dumps <code>results.json</code> (baked into this page), <code>comparison.csv</code>, and <code>loss_curve.png</code> so the dashboard and charts can be generated without re-running training.</p>
     </div>
   </div>
 
@@ -872,7 +872,7 @@ np.random.seed(<span class="num">7</span>)   <span class="cm"># keeps results re
     <div class="line"></div>
   </div>
 
-  <div class="chart-title">Loss Curves ΓÇö Mine vs Baseline (80 training steps)</div>
+  <div class="chart-title">Loss Curves &mdash; Mine vs Baseline (80 training steps)</div>
   <div class="chartbox">
     <svg id="lossChart" width="100%" viewBox="0 0 900 300"></svg>
     <div class="legend">
@@ -883,10 +883,10 @@ np.random.seed(<span class="num">7</span>)   <span class="cm"># keeps results re
 
   <div class="explain" style="margin-bottom:1.5rem;">
     <div class="explain-label">reading the chart</div>
-    <p>The "mine" loss is numerically larger because it includes the ╬╗┬╖WΓéé penalty on top of MSE ΓÇö this is a units mismatch, not a failure. The metric that actually matters is the held-out WΓéé distance in the table below, which is computed identically for both configs.</p>
+    <p>The "mine" loss is numerically larger because it includes the &lambda;&middot;WΓéé penalty on top of MSE &mdash; this is a units mismatch, not a failure. The metric that actually matters is the held-out WΓéé distance in the table below, which is computed identically for both configs.</p>
   </div>
 
-  <div class="chart-title">Distribution Comparison ΓÇö Barycenter vs Arithmetic Mean</div>
+  <div class="chart-title">Distribution Comparison &mdash; Barycenter vs Arithmetic Mean</div>
   <div class="chartbox">
     <svg id="distChart" width="100%" viewBox="0 0 900 240"></svg>
     <div class="legend">
@@ -954,15 +954,15 @@ pip install numpy matplotlib
 cd code
 python train.py
 
-<span class="cm"># 3. Open the site ΓÇö data is baked in, no server needed</span>
+<span class="cm"># 3. Open the site &mdash; data is baked in, no server needed</span>
 open ../index.html</code></pre>
   </div>
 
 </div><!-- /container -->
 
 <footer>
-  Wasserstein Diffusion on the Annotation Simplex ┬╖ Phase 1 Prototype ┬╖ 
-  <a href="https://itsmilindsahu.github.io" target="_blank">Milind Sahu</a> ┬╖ 
+  Wasserstein Diffusion on the Annotation Simplex &middot; Phase 1 Prototype &middot; 
+  <a href="https://itsmilindsahu.github.io" target="_blank">Milind Sahu</a> &middot; 
   <a href="https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation" target="_blank">GitHub</a>
 </footer>
 
@@ -1049,7 +1049,7 @@ function drawDistChart() {
     return d;
   }
   let html = `<line x1="${pL}" y1="${H-pB}" x2="${W-pR}" y2="${H-pB}" stroke="#2a2a2a"/>`;
-  html += `<text x="${W/2}" y="${H-4}" fill="#444" font-size="10" text-anchor="middle" font-family="Space Mono,monospace">FRAME INDEX (0ΓÇô29)</text>`;
+  html += `<text x="${W/2}" y="${H-4}" fill="#444" font-size="10" text-anchor="middle" font-family="Space Mono,monospace">FRAME INDEX (0&ndash;29)</text>`;
   annots.forEach(a => {
     html += `<path d="${pathD(a)}" fill="none" stroke="#2a2a2a" stroke-width="1.5" opacity="0.7"/>`;
   });
