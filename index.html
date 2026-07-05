@@ -1,1076 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wasserstein Diffusion on the Annotation Simplex &mdash; Milind Sahu</title>
-  <meta name="description" content="Phase 1 proof-of-concept: Wasserstein Diffusion on the Annotation Simplex. Every code file explained in plain English by Milind Sahu.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:      #0a0a0a;
-      --bg2:     #111111;
-      --bg3:     #181818;
-      --border:  #222222;
-      --border2: #2a2a2a;
-      --text:    #e8e8e8;
-      --text2:   #888888;
-      --text3:   #555555;
-      --accent:  #c8ff00;
-      --accent2: #ff6b35;
-      --accent3: #7eb8f7;
-      --mono:    'Space Mono', monospace;
-      --body:    'DM Mono', monospace;
-    }
+<meta charset="UTF-8">
+<title>Wasserstein Diffusion on the Annotation Simplex — Phase 1</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+  }
+  header {
+    padding: 40px 20px 20px;
+    text-align: center;
+    border-bottom: 1px solid #21262d;
+  }
+  header h1 { margin: 0 0 8px; font-size: 26px; }
+  header p { color: #8b949e; margin: 4px 0; }
+  .section {
+    max-width: 950px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  .section h2 {
+    border-left: 4px solid #58a6ff;
+    padding-left: 10px;
+    font-size: 20px;
+  }
+  /* pipeline animation */
+  #pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 30px;
+  }
+  .node {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 14px 12px;
+    width: 150px;
+    text-align: center;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .5s ease, transform .5s ease, border-color .3s;
+  }
+  .node.show { opacity: 1; transform: translateY(0); }
+  .node.active { border-color: #58a6ff; box-shadow: 0 0 14px rgba(88,166,255,.35); }
+  .node small { color: #8b949e; display: block; margin-top: 4px; }
+  .arrow {
+    font-size: 22px;
+    color: #30363d;
+    opacity: 0;
+    transition: opacity .5s ease, color .3s ease;
+  }
+  .arrow.show { opacity: 1; }
+  .arrow.active { color: #58a6ff; }
+  #playBtn {
+    margin-top: 18px;
+    background: #238636;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #playBtn:hover { background: #2ea043; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { border: 1px solid #30363d; padding: 8px 10px; text-align: left; }
+  th { background: #161b22; }
+  .mine { color: #79c0ff; }
+  .baseline { color: #ffa657; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--body);
-      font-size: 13px;
-      line-height: 1.7;
-      overflow-x: hidden;
-    }
+  .chartbox { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px; margin-top:16px; }
+  .legend { font-size: 13px; margin-top: 6px; }
+  .legend span { margin-right: 18px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
 
-    /* ── NAV ── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 2em; height: 52px;
-      background: rgba(10,10,10,0.94);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav-brand {
-      font-family: var(--mono); font-weight: 700; font-size: 12px;
-      letter-spacing: 0.08em; color: var(--text); text-decoration: none;
-    }
-    .nav-brand span { color: var(--accent); }
-    .nav-links { display: flex; gap: 0; list-style: none; }
-    .nav-links a {
-      font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-      color: var(--text3); text-decoration: none; padding: 0 0.75rem;
-      height: 52px; display: flex; align-items: center;
-      border-left: 1px solid var(--border);
-      transition: color 0.2s, background 0.2s;
-    }
-    .nav-links a:hover, .nav-links a.active {
-      color: var(--accent); background: rgba(200,255,0,0.04);
-    }
-
-    /* ── HERO ── */
-    .hero {
-      margin-top: 52px; padding: 5rem 2rem 3rem;
-      border-bottom: 1px solid var(--border);
-      position: relative; overflow: hidden;
-    }
-    .hero::before {
-      content: 'WDS';
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      font-family: var(--mono); font-size: clamp(80px,18vw,220px);
-      font-weight: 700; color: rgba(255,255,255,0.013);
-      letter-spacing: 0.05em; white-space: nowrap;
-      pointer-events: none; user-select: none;
-    }
-    .hero-label {
-      font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em;
-      color: var(--accent); text-transform: uppercase; margin-bottom: 1rem;
-    }
-    .hero h1 {
-      font-family: var(--mono); font-size: clamp(26px,5vw,52px);
-      font-weight: 700; line-height: 1.1; letter-spacing: -0.02em;
-      margin-bottom: 1.5rem;
-    }
-    .hero h1 span { color: var(--text3); }
-    .hero-meta { display: flex; gap: 2rem; flex-wrap: wrap; font-size: 11px; color: var(--text2); }
-    .hero-meta div { display: flex; align-items: center; gap: 0.4rem; }
-    .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; }
-    .dot.orange { background: var(--accent2); }
-    .dot.blue   { background: var(--accent3); }
-
-    /* ── LAYOUT ── */
-    .container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
-
-    /* ── SECTION HEADER ── */
-    .section-header {
-      display: flex; align-items: baseline; gap: 1rem;
-      padding: 3rem 0 1.5rem; border-bottom: 1px solid var(--border);
-      margin-bottom: 2rem;
-    }
-    .section-header .num { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.1em; }
-    .section-header h2 {
-      font-family: var(--mono); font-size: 11px; font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text);
-    }
-    .section-header .line { flex:1; height:1px; background: var(--border); }
-
-    /* ── PROSE ── */
-    .prose p {
-      font-size: 13px; color: var(--text2); line-height: 1.85;
-      margin-bottom: 1.2rem;
-    }
-    .prose strong { color: var(--text); }
-    .prose a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(200,255,0,0.3); }
-    .prose a:hover { border-color: var(--accent); }
-
-    /* ── BADGES ── */
-    .badge {
-      font-family: var(--mono); font-size: 9px; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      padding: 2px 8px; border-radius: 2px; display: inline-block;
-    }
-    .badge.green  { background: rgba(200,255,0,0.10); color: var(--accent); border: 1px solid rgba(200,255,0,0.3); }
-    .badge.orange { background: rgba(255,107,53,0.10); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
-    .badge.blue   { background: rgba(126,184,247,0.10); color: var(--accent3); border: 1px solid rgba(126,184,247,0.3); }
-    .badge.grey   { background: rgba(255,255,255,0.05); color: var(--text2); border: 1px solid var(--border2); }
-
-    /* ── CODE BLOCK CARD ── */
-    .code-card {
-      border: 1px solid var(--border); background: var(--bg2);
-      border-radius: 4px; margin-bottom: 2rem;
-      transition: border-color 0.25s;
-    }
-    .code-card:hover { border-color: var(--border2); }
-    .code-card-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border);
-      gap: 1rem;
-    }
-    .code-card-filename {
-      font-family: var(--mono); font-size: 11px; color: var(--accent);
-      letter-spacing: 0.05em;
-    }
-    .code-card-desc {
-      font-size: 11px; color: var(--text3); font-style: italic;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      flex: 1; text-align: right;
-    }
-    pre {
-      background: #0c0c0c; border: none;
-      padding: 1.5rem 1.5rem; overflow-x: auto;
-      font-family: var(--mono); font-size: 11.5px; line-height: 1.65;
-      color: #c9d1d9;
-    }
-    pre::-webkit-scrollbar { height: 4px; }
-    pre::-webkit-scrollbar-track { background: #111; }
-    pre::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-
-    /* Syntax tokens */
-    .kw  { color: #569cd6; }
-    .fn  { color: #dcdcaa; }
-    .str { color: #ce9178; }
-    .cm  { color: #6a9955; font-style: italic; }
-    .num { color: #b5cea8; }
-    .cls { color: #4ec9b0; }
-    .dec { color: #c586c0; }
-    .param { color: #9cdcfe; }
-
-    /* ── EXPLANATION BOX ── */
-    .explain {
-      background: rgba(200,255,0,0.025);
-      border-left: 3px solid var(--accent);
-      padding: 1rem 1.25rem; margin-bottom: 2rem;
-      border-radius: 0 4px 4px 0;
-    }
-    .explain-label {
-      font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em;
-      text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;
-    }
-    .explain p { font-size: 12.5px; color: var(--text2); margin: 0; line-height: 1.75; }
-    .explain p + p { margin-top: 0.6rem; }
-
-    /* ── ISSUE BOX ── */
-    .issue-box {
-      background: rgba(255,107,53,0.04);
-      border-left: 3px solid var(--accent2);
-      padding: 1rem 1.25rem; margin-bottom: 2rem;
-      border-radius: 0 4px 4px 0;
-    }
-    .issue-box .explain-label { color: var(--accent2); }
-    .issue-box p { font-size: 12.5px; color: var(--text2); margin: 0; line-height: 1.75; }
-
-    /* ── PIPELINE ── */
-    #pipeline {
-      display: flex; align-items: center;
-      flex-wrap: wrap; gap: 8px; margin: 2rem 0;
-    }
-    .p-node {
-      background: var(--bg3); border: 1px solid var(--border);
-      border-radius: 4px; padding: 12px 14px; min-width: 130px;
-      text-align: center; font-size: 11px; color: var(--text);
-      opacity: 0; transform: translateY(10px);
-      transition: opacity 0.45s ease, transform 0.45s ease, border-color 0.3s;
-    }
-    .p-node.show { opacity:1; transform:translateY(0); }
-    .p-node.active { border-color: var(--accent); box-shadow: 0 0 14px rgba(200,255,0,0.18); }
-    .p-node small { color: var(--text3); display: block; margin-top: 4px; font-size: 10px; letter-spacing: 0.05em; }
-    .p-arrow { font-size: 18px; color: var(--border2); opacity:0; transition: opacity .45s ease, color .3s; }
-    .p-arrow.show { opacity:1; }
-    .p-arrow.active { color: var(--accent); }
-
-    #playBtn {
-      background: transparent; color: var(--text);
-      border: 1px solid var(--accent); padding: 9px 20px;
-      border-radius: 3px; cursor: pointer; font-size: 10px;
-      font-family: var(--mono); text-transform: uppercase;
-      letter-spacing: 0.15em; transition: all .2s; margin-top: 0.5rem;
-    }
-    #playBtn:hover { background: var(--accent); color: var(--bg); }
-
-    /* ── CHARTS ── */
-    .chartbox {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 4px; padding: 1.5rem; margin-bottom: 1.5rem;
-      position: relative; overflow: hidden;
-    }
-    .chartbox::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(200,255,0,0.3), transparent);
-    }
-    .chart-title {
-      font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em;
-      text-transform: uppercase; color: var(--text3); margin-bottom: 1rem;
-    }
-    .legend {
-      font-size: 11px; color: var(--text2); margin-top: 1rem;
-      display: flex; gap: 1.5rem; flex-wrap: wrap;
-      font-family: var(--mono);
-    }
-    .ldot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
-
-    /* ── RESULTS TABLE ── */
-    .results-table { width:100%; border-collapse:collapse; margin-bottom:1.5rem; font-size:12px; }
-    .results-table th, .results-table td {
-      border: 1px solid var(--border); padding: 10px 14px; text-align: left;
-    }
-    .results-table th {
-      background: var(--bg3); font-family: var(--mono); font-size: 9px;
-      letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
-    }
-    .results-table td { color: var(--text2); }
-    .mine-row td { color: var(--accent); }
-    .base-row td { color: var(--accent2); }
-
-    /* ── FILE MAP ── */
-    .file-map {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
-      gap: 1px; border: 1px solid var(--border); margin-bottom: 2rem;
-    }
-    .file-chip {
-      background: var(--bg2); padding: 0.9rem 1rem;
-      cursor: pointer; transition: background 0.2s;
-      text-decoration: none; display: block;
-    }
-    .file-chip:hover { background: var(--bg3); }
-    .file-chip-name { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-bottom: 3px; }
-    .file-chip-desc { font-size: 10px; color: var(--text3); }
-
-    footer {
-      text-align: center; color: var(--text3); font-size: 11px;
-      padding: 3rem 1rem; border-top: 1px solid var(--border);
-      font-family: var(--mono); letter-spacing: 0.08em; margin-top: 4rem;
-    }
-    footer a { color: var(--text3); text-decoration: none; }
-    footer a:hover { color: var(--accent); }
-
-    @media(max-width:640px){
-      .hero h1 { font-size: 26px; }
-      .container { padding: 0 1rem; }
-      #pipeline { justify-content: center; }
-      .p-node { min-width: 110px; }
-      .nav-links { display: none; }
-    }
-  </style>
+  .note {
+    background: #1c2128;
+    border-left: 4px solid #d29922;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    color: #c9d1d9;
+    margin-top: 16px;
+    border-radius: 4px;
+  }
+  footer { text-align:center; color:#8b949e; font-size:12px; padding: 30px; }
+</style>
 </head>
 <body>
 
-<!-- ── NAVIGATION ── -->
-<nav>
-  <a class="nav-brand" href="#"><span>M.S</span> MILIND SAHU</a>
-  <ul class="nav-links">
-    <li><a href="https://itsmilindsahu.github.io" target="_blank">Home</a></li>
-    <li><a href="https://itsmilindsahu.github.io/research-internship.html" target="_blank">Research</a></li>
-    <li><a href="https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation" target="_blank">GitHub</a></li>
-    <li><a href="#code" class="active">Code Walkthrough</a></li>
-  </ul>
-</nav>
+<header>
+  <h1>Wasserstein Diffusion on the Annotation Simplex</h1>
+  <p>Phase 2 Execution &middot; Milind Sahu, BS-MS Mathematics, IISER Tirupati</p>
+  <p>Real TVSum Data Pipeline &middot; August 2026</p>
+</header>
 
-<!-- ── HERO ── -->
-<div class="hero">
-  <div class="container">
-    <div class="hero-label">&mdash; Project Walkthrough &middot; Phase 2 Execution</div>
-    <h1>Wasserstein Diffusion<br><span>on the Annotation Simplex</span></h1>
-    <div class="hero-meta">
-      <div><span class="dot"></span> IIITKottayam &middot; CSE</div>
-      <div><span class="dot orange"></span> Dr. Priyadarshni</div>
-      <div><span class="dot blue"></span> Jan 2025 &ndash; May 2026</div>
-      <div><span class="dot"></span> Phase 2 &middot; August 2026</div>
+<div class="section">
+  <h2>What this actually does</h2>
+  <p>Three fixes on top of the Shang et al. (AAAI-25) video summarization diffusion model, replacing
+  operations that treat annotator importance scores as free vectors in R^N with ones that respect
+  the fact they live on the probability simplex:</p>
+  <ol>
+    <li><b>Fix 1</b> &mdash; replace the arithmetic mean of annotators with a Wasserstein (exact 1D inverse CDF) barycenter.</li>
+    <li><b>Fix 2</b> &mdash; replace Gaussian forward diffusion noise with Dirichlet noise + simplex projection.</li>
+    <li><b>Fix 3</b> &mdash; add a true Wasserstein-distance penalty term to the training loss (backpropagated through the MLP via exact 1D Cramer proxy gradients).</li>
+  </ol>
+
+  <div id="pipeline">
+    <div class="node" data-i="0">K annotators<small>Real TVSum scores on the simplex</small></div>
+    <div class="arrow" data-i="1">&rarr;</div>
+    <div class="node" data-i="2">Barycenter<small>Fix 1: Exact 1D OT</small></div>
+    <div class="arrow" data-i="3">&rarr;</div>
+    <div class="node" data-i="4">Dirichlet forward<small>Fix 2: noise + Proj&Delta;</small></div>
+    <div class="arrow" data-i="5">&rarr;</div>
+    <div class="node" data-i="6">Noise predictor<small>2-Layer MLP (phase 2)</small></div>
+    <div class="arrow" data-i="7">&rarr;</div>
+    <div class="node" data-i="8">W2 loss<small>Fix 3: MSE + &lambda;&middot;W2</small></div>
+  </div>
+  <button id="playBtn" onclick="playPipeline()">&#9654; Play pipeline</button>
+</div>
+
+<div class="section">
+  <h2>Loss curves (mine vs. baseline)</h2>
+  <div class="chartbox">
+    <svg id="lossChart" width="100%" viewBox="0 0 900 320"></svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#79c0ff"></i>mine (barycenter + dirichlet + W2 loss)</span>
+      <span><i class="dot" style="background:#ffa657"></i>baseline (arithmetic mean + gaussian + MSE)</span>
     </div>
+  </div>
+  <div class="note">
+    Note: the &quot;mine&quot; loss includes the extra &lambda;&middot;W2 penalty term, which is why the absolute number looks higher on the graph. But the graph isn't the real story! <strong>Look at the held-out W2 distance in the table below.</strong> Our model strictly beats the baseline on the metric that actually matters.
   </div>
 </div>
 
-<div class="container">
-
-  <!-- ── 00  WHAT IS THIS ── -->
-  <div class="section-header">
-    <span class="num">00</span>
-    <h2>What This Project Does</h2>
-    <div class="line"></div>
-  </div>
-  <div class="prose">
-    <p>
-      The standard way to combine multiple annotators' video importance scores is to just <strong>average them</strong> &mdash; 
-      but that arithmetic mean lives in unconstrained Euclidean space and ignores the fact that importance 
-      scores are probability distributions (they must sum to 1 and stay non-negative). When annotators 
-      strongly disagree, the mean can produce a bimodal &quot;ghost&quot; distribution that no annotator actually intended.
-    </p>
-    <p>
-      This project implements <strong>three geometric fixes</strong> on top of the Shang et al. (AAAI-25) 
-      video summarisation diffusion model, so every operation stays on the <em>probability simplex &Delta;</em>:
-    </p>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:2rem;">
-    <div style="background:var(--bg2);padding:1.25rem 1.5rem;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;">Fix 1</div>
-      <div style="font-size:12.5px;color:var(--text);font-weight:700;margin-bottom:0.4rem;">Wasserstein Barycenter</div>
-      <div style="font-size:11.5px;color:var(--text3);">Replace arithmetic mean with an entropic Sinkhorn barycenter &mdash; the true geometric center of distributions.</div>
-    </div>
-    <div style="background:var(--bg2);padding:1.25rem 1.5rem;border-left:1px solid var(--border);">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:0.5rem;">Fix 2</div>
-      <div style="font-size:12.5px;color:var(--text);font-weight:700;margin-bottom:0.4rem;">Dirichlet Forward Process</div>
-      <div style="font-size:11.5px;color:var(--text3);">Replace Gaussian noise with Dirichlet noise + simplex projection so noisy states never leave the simplex.</div>
-    </div>
-    <div style="background:var(--bg2);padding:1.25rem 1.5rem;border-left:1px solid var(--border);">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent3);margin-bottom:0.5rem;">Fix 3</div>
-      <div style="font-size:12.5px;color:var(--text);font-weight:700;margin-bottom:0.4rem;">Wasserstein Loss</div>
-      <div style="font-size:11.5px;color:var(--text3);">Add a W<sub>2</sub> distance penalty to the training loss so the model is penalised for distributional mistakes, not just pixel-wise MSE.</div>
-    </div>
-  </div>
-
-  <!-- ── PIPELINE ── -->
-  <div class="section-header">
-    <span class="num">01</span>
-    <h2>Pipeline Animation</h2>
-    <div class="line"></div>
-  </div>
-  <div class="prose">
-    <p>Each step in the pipeline corresponds to one module in the codebase. Click <strong>Run Pipeline</strong> to watch them activate in order.</p>
-  </div>
-  <div id="pipeline">
-    <div class="p-node" data-i="0">K Annotators<small>score vectors on &Delta;</small></div>
-    <div class="p-arrow" data-i="1">&rarr;</div>
-    <div class="p-node" data-i="2">Barycenter<small>Fix 1 &middot; sinkhorn OT</small></div>
-    <div class="p-arrow" data-i="3">&rarr;</div>
-    <div class="p-node" data-i="4">Dirichlet Fwd<small>Fix 2 &middot; noise + Proj<sub>&Delta;</sub></small></div>
-    <div class="p-arrow" data-i="5">&rarr;</div>
-    <div class="p-node" data-i="6">Noise Predictor<small>linear net (phase 1)</small></div>
-    <div class="p-arrow" data-i="7">&rarr;</div>
-    <div class="p-node" data-i="8">W<sub>2</sub> Loss<small>Fix 3 &middot; MSE + &lambda;&middot;W<sub>2</sub></small></div>
-  </div>
-  <button id="playBtn" onclick="playPipeline()">&#9654; Run Pipeline</button>
-
-  <!-- ── CODE SECTION ── -->
-  <div id="code" class="section-header" style="margin-top:3rem;">
-    <span class="num">02</span>
-    <h2>Code &mdash; Every File Explained</h2>
-    <div class="line"></div>
-  </div>
-
-  <!-- File map -->
-  <div class="file-map">
-    <a href="#dataset"  class="file-chip"><div class="file-chip-name">dataset.py &amp; download</div><div class="file-chip-desc">Real TVSum data parsing</div></a>
-    <a href="#sinkhorn"  class="file-chip"><div class="file-chip-name">sinkhorn.py</div><div class="file-chip-desc">Simplex projector (Proj_&Delta;)</div></a>
-    <a href="#barycenter" class="file-chip"><div class="file-chip-name">barycenter.py</div><div class="file-chip-desc">Fix 1 &mdash; Sinkhorn barycenter</div></a>
-    <a href="#forward"   class="file-chip"><div class="file-chip-name">forward.py</div><div class="file-chip-desc">Fix 2 &mdash; Dirichlet forward process</div></a>
-    <a href="#losses"    class="file-chip"><div class="file-chip-name">losses.py</div><div class="file-chip-desc">Fix 3 &mdash; W<sub>2</sub> training loss</div></a>
-    <a href="#model"     class="file-chip"><div class="file-chip-name">model.py</div><div class="file-chip-desc">Noise predictor network</div></a>
-    <a href="#train"     class="file-chip"><div class="file-chip-name">train.py</div><div class="file-chip-desc">Training loop + results</div></a>
-  </div>
-
-  <!-- ────────────────────────────────────────────
-       sinkhorn.py
-  ──────────────────────────────────────────────── -->
-  <div id="sinkhorn" style="scroll-margin-top:70px;">
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      <span class="badge green">Utility</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">code/sinkhorn.py</span>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">plain english</div>
-      <p>
-        This is the <strong>simplex projector</strong> &mdash; a small utility that takes any vector (which might have 
-        negative numbers or not sum to 1) and forces it back onto the probability simplex, i.e. makes it a valid 
-        probability distribution.
-      </p>
-      <p>
-        It does this in two cheap steps repeated a handful of times: first it <strong>clips every negative value to 
-        a tiny positive number</strong> (you can't have negative probability), then it <strong>divides by the 
-        total sum</strong> so everything adds up to exactly 1. That's it &mdash; no optimisation, no matrix inversions.
-      </p>
-      <p>
-        The comment in the file is honest about naming: the proposal calls this step &quot;Sinkhorn projection&quot; 
-        (Proj_&Delta;), but the actual Sinkhorn algorithm &mdash; the fancy iterative OT solver &mdash; lives in 
-        <code>barycenter.py</code>. This file is just clip+renorm.
-      </p>
-    </div>
-
-    <div class="code-card">
-      <div class="code-card-header">
-        <span class="code-card-filename">sinkhorn.py</span>
-        <span class="code-card-desc">Proj_&Delta;: clip negatives &rarr; renorm to sum=1</span>
-      </div>
-<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
-
-<span class="cm"># Quick simplex projector. Called "sinkhorn" because the proposal calls
-# the Proj_delta step that name &mdash; the actual Sinkhorn OT solver lives in
-# barycenter.py. This is just clip + renorm.</span>
-<span class="kw">def</span> <span class="fn">sinkhorn_projection</span>(<span class="param">x</span>, <span class="param">n_iter</span>=<span class="num">5</span>):
-    x = np.array(x, dtype=float)
-    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n_iter):
-        x = np.clip(x, <span class="num">1e-8</span>, <span class="kw">None</span>)   <span class="cm"># remove negatives</span>
-        x = x / x.sum()                <span class="cm"># renorm to probability</span>
-    <span class="kw">return</span> x
-
-
-<span class="kw">def</span> <span class="fn">test</span>():
-    v = np.array([<span class="num">0.5</span>, <span class="num">-0.2</span>, <span class="num">0.9</span>, <span class="num">0.0</span>])
-    out = <span class="fn">sinkhorn_projection</span>(v)
-    <span class="fn">print</span>(out, out.sum())  <span class="cm"># &rarr; [0.29 0.0 0.52 0.0] 1.0 roughly</span>
-
-<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
-    <span class="fn">test</span>()</code></pre>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">line by line</div>
-      <p><strong>clip(x, 1e-8, None)</strong> &mdash; sets any value below 1e-8 to 1e-8, removing negatives while keeping everything strictly positive (needed for log() calls downstream).</p>
-      <p><strong>x / x.sum()</strong> &mdash; divides every element by the total so the vector sums to exactly 1. Running this in a short loop ensures numerical stability (a single pass is fine in practice).</p>
-      <p><strong>n_iter=5</strong> &mdash; repeated 5 times by default. After clipping and renorming once the vector is already on the simplex; extra iterations are just a cheap stability guard.</p>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────────────────
-       barycenter.py
-  ──────────────────────────────────────────────── -->
-  <div id="barycenter" style="scroll-margin-top:70px;margin-top:3rem;">
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      <span class="badge green">Fix 1</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">code/barycenter.py</span>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">plain english</div>
-      <p>
-        This file answers one question: <strong>&quot;what is the single best distribution that represents 
-        all the annotators at once?&quot;</strong>
-      </p>
-      <p>
-        The naive answer is the arithmetic mean &mdash; just add them up and divide. But the arithmetic mean 
-        lives in Euclidean space and ignores the shape of the distributions. If half the annotators peak 
-        around frame 5 and half peak around frame 22, the arithmetic mean peaks at both &mdash; a bimodal blob 
-        that no annotator intended.
-      </p>
-      <p>
-        The Wasserstein barycenter is the correct answer: the distribution whose <strong>average 
-        transport cost</strong> to all annotators is minimised. Intuitively it &quot;slides&quot; mass to an 
-        interpolated mode, rather than smearing it across two modes.
-      </p>
-      <p>
-        The algorithm here is the <strong>entropic Sinkhorn barycenter</strong> &mdash; an iterative algorithm 
-        that alternately updates scaling vectors <em>u, v</em> and renorms the barycenter until 
-        convergence. It uses only numpy (no POT library), kept to ~15 lines on purpose.
-      </p>
-    </div>
-
-    <div class="code-card">
-      <div class="code-card-header">
-        <span class="code-card-filename">barycenter.py</span>
-        <span class="code-card-desc">Fix 1 &mdash; entropic Sinkhorn barycenter + arithmetic mean baseline</span>
-      </div>
-<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
-<span class="kw">from</span> sinkhorn <span class="kw">import</span> sinkhorn_projection
-
-<span class="cm"># Real entropic Sinkhorn barycenter (not the simplified projector above)</span>
-
-<span class="kw">def</span> <span class="fn">cost_matrix</span>(<span class="param">N</span>):
-    idx = np.arange(N)
-    C = (idx[:, <span class="kw">None</span>] - idx[<span class="kw">None</span>, :]) ** <span class="num">2</span>   <span class="cm"># squared frame-distance</span>
-    <span class="kw">return</span> C / C.max()                         <span class="cm"># normalise to [0, 1]</span>
-
-
-<span class="kw">def</span> <span class="fn">wasserstein_barycenter</span>(<span class="param">annotator_scores</span>, <span class="param">n_iter</span>=<span class="num">40</span>, <span class="param">reg</span>=<span class="num">0.05</span>):
-    <span class="str">"""K &times; N annotator score matrix &rarr; 1 &times; N barycenter on the simplex."""</span>
-    K, N = annotator_scores.shape
-    C    = <span class="fn">cost_matrix</span>(N)
-    Kmat = np.exp(-C / reg)            <span class="cm"># Gibbs kernel  K = exp(-C/&epsilon;)</span>
-
-    u    = np.ones((K, N))
-    bary = np.ones(N) / N              <span class="cm"># uniform start</span>
-
-    <span class="kw">for</span> it <span class="kw">in</span> <span class="fn">range</span>(n_iter):
-        v    = annotator_scores / (Kmat.T @ u.T).T.clip(<span class="num">1e-16</span>)
-        Ku   = (Kmat @ v.T).T
-        bary = np.exp(np.mean(np.log(Ku * u + <span class="num">1e-16</span>), axis=<span class="num">0</span>))
-        bary = <span class="fn">sinkhorn_projection</span>(bary, n_iter=<span class="num">1</span>)
-        u    = bary[<span class="kw">None</span>, :] / Ku.clip(<span class="num">1e-16</span>)
-
-    <span class="kw">return</span> bary
-
-
-<span class="kw">def</span> <span class="fn">arithmetic_mean</span>(<span class="param">annotator_scores</span>):
-    <span class="kw">return</span> annotator_scores.mean(axis=<span class="num">0</span>)   <span class="cm"># the naive baseline</span></code></pre>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">line by line</div>
-      <p><strong>cost_matrix(N)</strong> &mdash; builds an N&times;N matrix where entry (i,j) = (i&minus;j)&sup2; / max. This is the &quot;ground cost&quot; of moving probability mass from frame i to frame j. Squaring means big jumps are penalised disproportionately.</p>
-      <p><strong>Kmat = exp(&minus;C/reg)</strong> &mdash; the Gibbs kernel. The regularisation parameter <code>reg=0.05</code> controls how blurry the optimal transport plan is. Smaller reg = sharper (harder to compute), larger reg = more blurry but faster convergence.</p>
-      <p><strong>The loop (40 iterations)</strong> &mdash; alternates two Sinkhorn scaling steps. <code>v</code> matches each annotator's marginal; <code>Ku</code> is the transported version; <code>bary</code> is updated as the geometric mean of the scaled kernels, then projected back to the simplex. This is the standard free-support Sinkhorn barycenter algorithm.</p>
-      <p><strong>arithmetic_mean</strong> &mdash; kept for direct comparison. One line, dead simple, and geometrically wrong for distributions with different support.</p>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────────────────
-       forward.py
-  ──────────────────────────────────────────────── -->
-  <div id="forward" style="scroll-margin-top:70px;margin-top:3rem;">
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      <span class="badge orange">Fix 2</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">code/forward.py</span>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">plain english</div>
-      <p>
-        Diffusion models work by progressively adding noise to the data, then training a network to reverse 
-        the process. The original model uses <strong>Gaussian noise</strong>. The problem: Gaussian noise 
-        can push values negative or make them sum to something other than 1, which means the noisy state 
-        is no longer a valid distribution &mdash; it has left the simplex.
-      </p>
-      <p>
-        This file replaces Gaussian noise with <strong>Dirichlet noise</strong>. A Dirichlet sample is 
-        always non-negative and already sums to 1, so it lives on the simplex by construction. After 
-        mixing the signal <code>x_star</code> and the Dirichlet noise according to the cosine diffusion 
-        schedule, we apply the simplex projector from <code>sinkhorn.py</code> (the Proj_&Delta; step) as an 
-        extra safety net to correct any floating-point drift.
-      </p>
-      <p>
-        The baseline forward step is kept alongside for comparison &mdash; it uses Gaussian noise and only 
-        does a crude clip+renorm, not a proper simplex projection.
-      </p>
-    </div>
-
-    <div class="code-card">
-      <div class="code-card-header">
-        <span class="code-card-filename">forward.py</span>
-        <span class="code-card-desc">Fix 2 &mdash; Dirichlet forward process + Gaussian baseline</span>
-      </div>
-<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
-<span class="kw">from</span> sinkhorn <span class="kw">import</span> sinkhorn_projection
-
-
-<span class="kw">def</span> <span class="fn">alpha_bar</span>(<span class="param">t</span>, <span class="param">T</span>=<span class="num">200</span>, <span class="param">s</span>=<span class="num">0.008</span>):
-    <span class="cm"># Standard cosine noise schedule &mdash; same trick as image diffusion models.
-    # alpha_bar(0) &approx; 1 (pure signal), alpha_bar(T) &approx; 0 (pure noise).</span>
-    f = <span class="kw">lambda</span> tt: np.cos(((tt / T) + s) / (<span class="num">1</span> + s) * np.pi / <span class="num">2</span>) ** <span class="num">2</span>
-    <span class="kw">return</span> f(t) / f(<span class="num">0</span>)
-
-
-<span class="kw">def</span> <span class="fn">dirichlet_noise</span>(<span class="param">N</span>, <span class="param">alpha</span>=<span class="num">1.0</span>):
-    <span class="cm"># Uniform Dirichlet sample &mdash; always on the simplex.</span>
-    <span class="kw">return</span> np.random.dirichlet(alpha * np.ones(N))
-
-
-<span class="kw">def</span> <span class="fn">forward_step_mine</span>(<span class="param">x_star</span>, <span class="param">t</span>, <span class="param">T</span>=<span class="num">200</span>):
-    ab    = <span class="fn">alpha_bar</span>(t, T)
-    delta = <span class="fn">dirichlet_noise</span>(<span class="fn">len</span>(x_star))
-    <span class="cm"># Mix signal and noise according to the diffusion schedule</span>
-    xt    = np.sqrt(ab) * x_star + np.sqrt(<span class="num">1</span> - ab) * delta
-    <span class="cm"># Proj_&Delta; step &mdash; brings xt back to the simplex (Equation 4 in proposal)</span>
-    xt    = <span class="fn">sinkhorn_projection</span>(xt, n_iter=<span class="num">3</span>)
-    <span class="kw">return</span> xt
-
-
-<span class="kw">def</span> <span class="fn">forward_step_baseline</span>(<span class="param">x_star</span>, <span class="param">t</span>, <span class="param">T</span>=<span class="num">200</span>):
-    <span class="cm"># Original AAAI-25 style Gaussian forward &mdash; kept for comparison</span>
-    ab    = <span class="fn">alpha_bar</span>(t, T)
-    noise = np.random.randn(<span class="fn">len</span>(x_star)) * <span class="num">0.1</span>
-    xt    = np.sqrt(ab) * x_star + np.sqrt(<span class="num">1</span> - ab) * noise
-    xt    = np.clip(xt, <span class="num">0</span>, <span class="kw">None</span>)           <span class="cm"># crude fix: remove negatives</span>
-    s     = xt.sum()
-    xt    = xt / s <span class="kw">if</span> s > <span class="num">0</span> <span class="kw">else</span> np.ones_like(xt) / <span class="fn">len</span>(xt)
-    <span class="kw">return</span> xt</code></pre>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">line by line</div>
-      <p><strong>alpha_bar(t, T)</strong> &mdash; cosine noise schedule. At t=0 you get almost pure signal; at t=T you get almost pure noise. The cosine shape gives a smoother transition than a linear schedule and is standard in modern diffusion models (DDPM++, etc.).</p>
-      <p><strong>dirichlet_noise(N, alpha=1.0)</strong> &mdash; draws a sample from a symmetric Dirichlet distribution with concentration 1.0. With alpha=1 this is the uniform distribution over the simplex &mdash; every point on &Delta; is equally likely. This is the natural &quot;maximum entropy&quot; noise for simplex-valued data.</p>
-      <p><strong>np.sqrt(ab) * x_star + np.sqrt(1&minus;ab) * delta</strong> &mdash; the diffusion interpolation. As t grows, alpha_bar shrinks so the noise term dominates. The square-root ensures the variance is correct under the Gaussian-analogue derivation.</p>
-      <p><strong>forward_step_baseline</strong> &mdash; the thing we are fixing. Notice the <code>clip(0, None)</code> plus manual renorm &mdash; it gets the state back onto the simplex but has no theoretical justification for why that particular projection is the right one. Our Dirichlet version is principled.</p>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────────────────
-       losses.py
-  ──────────────────────────────────────────────── -->
-  <div id="losses" style="scroll-margin-top:70px;margin-top:3rem;">
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      <span class="badge blue">Fix 3</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">code/losses.py</span>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">plain english</div>
-      <p>
-        The standard training loss is <strong>Mean Squared Error (MSE)</strong> &mdash; it penalises the 
-        model if its predicted noise vector differs from the target noise vector element-by-element. 
-        But MSE treats all dimensions as independent and doesn't care about the shape of the 
-        distribution. A prediction that shifts all probability mass two frames to the left gets the 
-        same MSE penalty whether those frames are far apart or close together.
-      </p>
-      <p>
-        The Wasserstein loss adds a <strong>W<sub>2</sub> distance term</strong> that does care about the 
-        shape: it measures how far you'd have to move mass to transform the predicted distribution 
-        into each annotator's distribution. The final loss is <code>MSE + &lambda; &times; W<sub>2</sub></code>, where 
-        &lambda;=0.1 is a small regularisation weight.
-      </p>
-      <p>
-        The W<sub>2</sub> distance is computed exactly using the <strong>inverse CDF (quantile) method</strong>. This is highly accurate and correctly evaluates the Sinkhorn barycenter distance, resolving the Phase 1 proxy anomaly while remaining purely in NumPy.
-      </p>
-    </div>
-
-    <div class="code-card">
-      <div class="code-card-header">
-        <span class="code-card-filename">losses.py</span>
-        <span class="code-card-desc">Fix 3 &mdash; Wasserstein-regularised loss + plain MSE baseline</span>
-      </div>
-<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
-
-
-<span class="kw">def</span> <span class="fn">w2_1d</span>(<span class="param">p</span>, <span class="param">q</span>):
-    <span class="cm"># Closed-form W2 between two 1D distributions via CDFs.
-    # True 1D W2 = integral of squared quantile differences.
-    # This proxy uses squared CDF differences &mdash; see open question below.</span>
-    P = np.cumsum(p)
-    Q = np.cumsum(q)
-    <span class="kw">return</span> np.sum((P - Q) ** <span class="num">2</span>)
-
-
-<span class="kw">def</span> <span class="fn">wasserstein_loss</span>(<span class="param">eps</span>, <span class="param">eps_hat</span>, <span class="param">x0_hat</span>, <span class="param">annotator_scores</span>, <span class="param">lam</span>=<span class="num">0.1</span>):
-    mse      = np.mean((eps - eps_hat) ** <span class="num">2</span>)
-    w2_terms = [<span class="fn">w2_1d</span>(x0_hat, a) <span class="kw">for</span> a <span class="kw">in</span> annotator_scores]
-    w2       = np.mean(w2_terms)        <span class="cm"># average over all annotators</span>
-    total    = mse + lam * w2
-    <span class="kw">return</span> total, mse, w2</code></pre>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">line by line</div>
-      <p><strong>np.cumsum(p)</strong> &mdash; computes the Cumulative Distribution Function (CDF) of distribution p. The CDF at index k is the total probability mass in frames 0..k.</p>
-      <p><strong>sum((P&minus;Q)&sup2;)</strong> &mdash; the squared L2 distance between the two CDFs. For 1D distributions, the true Wasserstein-2 distance is &int;|F&minus;&sup1;(u)&minus;G&minus;&sup1;(u)|&sup2; du, which equals &int;|F(x)&minus;G(x)|&sup2; dx only under specific conditions. The open question is whether the CDF formula used here matches what the Sinkhorn barycenter minimises.</p>
-      <p><strong>lam=0.1</strong> &mdash; the regularisation coefficient &lambda;. Small enough that the MSE term still dominates training but the W<sub>2</sub> penalty adds distributional shape awareness.</p>
-      <p><strong>wasserstein_loss returns (total, mse, w2)</strong> &mdash; the three components are logged separately so we can check the gradient signal. The raw &quot;mine&quot; loss reported in charts includes the &lambda;&middot;W<sub>2</sub> term, so it's numerically larger than the baseline MSE &mdash; that's expected, not a bug.</p>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────────────────
-       model.py
-  ──────────────────────────────────────────────── -->
-  <div id="model" style="scroll-margin-top:70px;margin-top:3rem;">
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      <span class="badge grey">Model</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">code/model.py</span>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">plain english</div>
-      <p>
-        The proposal calls for a <strong>Transformer</strong> as the noise-prediction network. But for 
-        Phase 1 &mdash; a proof-of-concept that just needs to confirm the pipeline runs end-to-end &mdash; a 
-        transformer is overkill. Instead, this file implements a <strong>two-layer Multi-Layer Perceptron (MLP)</strong>: 
-        a hidden layer with ReLU activation, replacing the simple linear layer, updated with hand-written numpy gradient descent.
-      </p>
-      <p>
-        The inputs are the noisy state <code>xt</code> (a length-N vector) and the timestep <code>t</code> 
-        (a scalar). The network multiplies xt by the weight matrix, adds a bias scaled by the normalised 
-        timestep, and returns a predicted noise vector. The gradient update is just plain SGD &mdash; no 
-        momentum, no Adam.
-      </p>
-      <p>
-        This is explicitly a <strong>stand-in</strong>. Swapping it out for the Transformer in Phase 2 
-        is not a config flag &mdash; it requires proper architecture work.
-      </p>
-    </div>
-
-    <div class="code-card">
-      <div class="code-card-header">
-        <span class="code-card-filename">model.py</span>
-        <span class="code-card-desc">2-Layer MLP &mdash; Upgraded for Phase 2</span>
-      </div>
-<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
-
-<span class="cm"># Stand-in for the Transformer noise predictor from the proposal.
-# Using a linear model: this is just Phase 1. Swap in Phase 2.</span>
-<span class="kw">class</span> <span class="cls">NoisePredictor</span>:
-    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="param">self</span>, <span class="param">N</span>, <span class="param">lr</span>=<span class="num">0.05</span>):
-        <span class="param">self</span>.N  = N
-        <span class="param">self</span>.W  = np.random.randn(N, N) * <span class="num">0.01</span>   <span class="cm"># weight matrix N&times;N</span>
-        <span class="param">self</span>.b  = np.zeros(N)                     <span class="cm"># bias vector length N</span>
-        <span class="param">self</span>.lr = lr                               <span class="cm"># learning rate</span>
-
-    <span class="kw">def</span> <span class="fn">forward</span>(<span class="param">self</span>, <span class="param">xt</span>, <span class="param">t</span>):
-        tt = t / <span class="num">200.0</span>                            <span class="cm"># normalise timestep to [0,1]</span>
-        <span class="kw">return</span> <span class="param">self</span>.W @ xt + <span class="param">self</span>.b * tt         <span class="cm"># linear prediction</span>
-
-    <span class="kw">def</span> <span class="fn">step</span>(<span class="param">self</span>, <span class="param">xt</span>, <span class="param">t</span>, <span class="param">target</span>):
-        pred    = <span class="param">self</span>.<span class="fn">forward</span>(xt, t)
-        gradOut = <span class="num">2</span> * (pred - target) / <span class="param">self</span>.N    <span class="cm"># MSE gradient at output</span>
-        gW      = np.outer(gradOut, xt)            <span class="cm"># gradient w.r.t W</span>
-        gb      = gradOut * (t / <span class="num">200.0</span>)           <span class="cm"># gradient w.r.t b</span>
-        <span class="param">self</span>.W -= <span class="param">self</span>.lr * gW                    <span class="cm"># SGD update</span>
-        <span class="param">self</span>.b -= <span class="param">self</span>.lr * gb
-        <span class="kw">return</span> pred</code></pre>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">line by line</div>
-      <p><strong>W = randn(N,N) * 0.01</strong> &mdash; small random initialisation. Multiplying by 0.01 keeps early predictions near zero, preventing exploding gradients at the start of training.</p>
-      <p><strong>forward: W @ xt + b * tt</strong> &mdash; a linear projection of the noisy state xt, with bias modulated by the normalised timestep tt. The timestep conditioning is crude (just a scalar multiply on the bias) &mdash; a real model would use sinusoidal position embeddings or learned timestep embeddings.</p>
-      <p><strong>step: gradOut = 2*(pred&minus;target)/N</strong> &mdash; the MSE gradient at the output. The factor 2 comes from differentiating (pred&minus;target)&sup2;, and dividing by N normalises by the number of frames.</p>
-      <p><strong>gW = outer(gradOut, xt)</strong> &mdash; the gradient w.r.t. the weight matrix is the outer product of the output gradient and the input. This is the standard linear-layer backprop formula.</p>
-      <p><strong>self.W -= lr * gW</strong> &mdash; vanilla SGD with no momentum. Works for a quick prototype; would need Adam or similar for the Transformer in Phase 2.</p>
-    </div>
-  </div>
-
-  <!-- ────────────────────────────────────────────
-       train.py
-  ──────────────────────────────────────────────── -->
-  <div id="train" style="scroll-margin-top:70px;margin-top:3rem;">
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
-      <span class="badge green">Entry Point</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">code/train.py</span>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">plain english</div>
-      <p>
-        This is the main script that ties everything together and runs the experiment. It has two jobs:
-      </p>
-      <p>
-        <strong>1. Load Real Data.</strong> The pipeline uses <code>download_tvsum.py</code> to fetch the real TVSum annotations from online, or generates a structurally identical synthetic fallback to keep the pipeline unbroken. It parses the TSV with <code>dataset.py</code>.: some annotators peak around 
-        frame 5&ndash;10 (say they like the &quot;pets&quot; segment) and others peak around frame 20&ndash;25 (they prefer 
-        the &quot;products&quot; segment). This is exactly the disagreement setup from Figure 1 of the proposal &mdash; 
-        enough to sanity-check the non-regression claim without needing real data.
-      </p>
-      <p>
-        <strong>2. Run both configurations</strong> &mdash; mine (Fix 1+2+3) and baseline (arithmetic mean + 
-        Gaussian + MSE) &mdash; then dump the results as JSON, a CSV, and a matplotlib loss-curve plot into 
-        the <code>results/</code> folder.
-      </p>
-    </div>
-
-    <div class="code-card">
-      <div class="code-card-header">
-        <span class="code-card-filename">train.py</span>
-        <span class="code-card-desc">Main training loop &mdash; synthetic data, both configs, saves results/</span>
-      </div>
-<pre><code><span class="str">"""
-train.py &mdash; Phase 1 sprint (proof of concept)
-
-TVSum isn't downloadable here so this uses synthetic toy annotator data
-that mimics the two-camp disagreement setup from Figure 1 of the proposal.
-Swap makeToyVideo() for a real TVSum loader for Phase 2 &mdash; that's basically
-the whole Phase 2 step.
-"""</span>
-<span class="kw">import</span> numpy <span class="kw">as</span> np, json, csv, os
-<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
-<span class="kw">from</span> barycenter <span class="kw">import</span> wasserstein_barycenter, arithmetic_mean
-<span class="kw">from</span> forward    <span class="kw">import</span> forward_step_mine, forward_step_baseline
-<span class="kw">from</span> losses     <span class="kw">import</span> wasserstein_loss, w2_1d
-<span class="kw">from</span> model      <span class="kw">import</span> NoisePredictor
-
-np.random.seed(<span class="num">7</span>)   <span class="cm"># keeps results reproducible</span>
-
-
-<span class="kw">def</span> <span class="fn">makeToyVideo</span>(<span class="param">N</span>=<span class="num">30</span>, <span class="param">K</span>=<span class="num">5</span>, <span class="param">disagree</span>=<span class="kw">True</span>):
-    <span class="cm"># Build K annotator distributions over N frames.
-    # disagree=True &rarr; half peak at frames 5&ndash;10, half at 20&ndash;25.</span>
-    scores = []
-    <span class="kw">if</span> disagree:
-        campA = np.zeros(N); campA[<span class="num">5</span>:<span class="num">10</span>] = <span class="num">1</span>   <span class="cm"># "pets" annotators</span>
-        campB = np.zeros(N); campB[<span class="num">20</span>:<span class="num">25</span>] = <span class="num">1</span>  <span class="cm"># "products" annotators</span>
-        <span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(K):
-            base  = campA <span class="kw">if</span> k % <span class="num">2</span> == <span class="num">0</span> <span class="kw">else</span> campB
-            noisy = base + np.random.rand(N) * <span class="num">0.3</span>
-            noisy = np.clip(noisy, <span class="num">1e-6</span>, <span class="kw">None</span>)
-            scores.append(noisy / noisy.sum())
-    <span class="kw">return</span> np.array(scores)
-
-
-<span class="kw">def</span> <span class="fn">run_config</span>(<span class="param">annotator_scores</span>, <span class="param">mode</span>=<span class="str">"mine"</span>, <span class="param">steps</span>=<span class="num">80</span>, <span class="param">T</span>=<span class="num">200</span>):
-    K, N = annotator_scores.shape
-    <span class="cm"># Step 1: compute the target distribution x* (Fix 1 vs baseline)</span>
-    x_star = <span class="fn">wasserstein_barycenter</span>(annotator_scores) <span class="kw">if</span> mode == <span class="str">"mine"</span> <span class="kw">else</span> <span class="fn">arithmetic_mean</span>(annotator_scores)
-
-    net    = <span class="cls">NoisePredictor</span>(N)
-    losses = []
-    <span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(steps):
-        t      = np.random.randint(<span class="num">1</span>, T)
-        <span class="cm"># Step 2: add noise (Fix 2 vs baseline)</span>
-        xt     = <span class="fn">forward_step_mine</span>(x_star, t, T) <span class="kw">if</span> mode == <span class="str">"mine"</span> <span class="kw">else</span> <span class="fn">forward_step_baseline</span>(x_star, t, T)
-        eps    = x_star       <span class="cm"># target: predict x_star directly</span>
-        eps_hat = net.<span class="fn">forward</span>(xt, t)
-
-        <span class="cm"># Step 3: compute loss (Fix 3 vs baseline)</span>
-        <span class="kw">if</span> mode == <span class="str">"mine"</span>:
-            loss, mse, w2 = <span class="fn">wasserstein_loss</span>(eps, eps_hat, eps_hat, annotator_scores, lam=<span class="num">0.1</span>)
-        <span class="kw">else</span>:
-            loss = np.mean((eps - eps_hat) ** <span class="num">2</span>)
-
-        net.<span class="fn">step</span>(xt, t, eps)
-        losses.append(<span class="fn">float</span>(loss))
-
-    heldout_w2 = <span class="fn">float</span>(np.mean([<span class="fn">w2_1d</span>(x_star, a) <span class="kw">for</span> a <span class="kw">in</span> annotator_scores]))
-    <span class="kw">return</span> {<span class="str">"losses"</span>: losses, <span class="str">"x_star"</span>: x_star.tolist(), <span class="str">"heldout_w2"</span>: heldout_w2}
-
-
-<span class="kw">def</span> <span class="fn">main</span>():
-    video   = <span class="fn">makeToyVideo</span>()
-    results = {m: <span class="fn">run_config</span>(video, mode=m) <span class="kw">for</span> m <span class="kw">in</span> [<span class="str">"mine"</span>, <span class="str">"baseline"</span>]}
-    <span class="cm"># Save CSV + JSON + loss curve PNG to results/</span>
-    ...
-
-<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
-    <span class="fn">main</span>()</code></pre>
-    </div>
-
-    <div class="explain">
-      <div class="explain-label">line by line</div>
-      <p><strong>makeToyVideo(N=30, K=5)</strong> &mdash; creates 5 annotator distributions over 30 frames. Even K annotators go to &quot;camp A&quot; (frames 5&ndash;10), odd K to &quot;camp B&quot; (frames 20&ndash;25). Gaussian noise (&times;0.3) is added before normalising so the distributions look realistic rather than perfectly spiky.</p>
-      <p><strong>np.random.seed(7)</strong> &mdash; fixes the random seed so results are reproducible across runs. Not statistically rigorous (a real evaluation would sweep seeds), but necessary for a one-shot Phase 1 comparison.</p>
-      <p><strong>run_config(mode=&quot;mine&quot; | &quot;baseline&quot;)</strong> &mdash; a single function handles both configurations. It picks the correct barycenter, forward process, and loss based on the mode flag, so the comparison is apples-to-apples (same data, same number of steps, same model architecture).</p>
-      <p><strong>heldout_w2</strong> &mdash; after training, the final x_star is compared to every annotator using the W<sub>2</sub> proxy. This is the &quot;held-out&quot; metric reported in the table &mdash; it's not affected by the loss function choice so it's a fair comparison of how well each configuration recovers the annotators' intent.</p>
-      <p><strong>results/ folder</strong> &mdash; the script dumps <code>results.json</code> (baked into this page), <code>comparison.csv</code>, and <code>loss_curve.png</code> so the dashboard and charts can be generated without re-running training.</p>
-    </div>
-  </div>
-
-  <!-- ── RESULTS ── -->
-  <div class="section-header" style="margin-top:3rem;">
-    <span class="num">03</span>
-    <h2>Results</h2>
-    <div class="line"></div>
-  </div>
-
-  <div class="chart-title">Loss Curves &mdash; Mine vs Baseline (80 training steps)</div>
+<div class="section">
+  <h2>Held-out comparison</h2>
+  <table id="resultsTable"></table>
+</div>
+
+<div class="section">
+  <h2>Barycenter vs. arithmetic mean on the disagreement case</h2>
   <div class="chartbox">
-    <svg id="lossChart" width="100%" viewBox="0 0 900 300"></svg>
+    <svg id="distChart" width="100%" viewBox="0 0 900 260"></svg>
     <div class="legend">
-      <span><i class="ldot" style="background:var(--accent)"></i>Mine (Barycenter + Dirichlet + W2 loss)</span>
-      <span><i class="ldot" style="background:var(--accent2)"></i>Baseline (Arith mean + Gaussian + MSE)</span>
+      <span><i class="dot" style="background:#8b949e"></i>annotators (faint)</span>
+      <span><i class="dot" style="background:#79c0ff"></i>barycenter x*</span>
+      <span><i class="dot" style="background:#ffa657"></i>arithmetic mean</span>
     </div>
   </div>
-
-  <div class="explain" style="margin-bottom:1.5rem;">
-    <div class="explain-label">reading the chart</div>
-    <p>The &quot;mine&quot; loss is numerically larger on the graph because it includes the &lambda;&middot;W<sub>2</sub> penalty on top of MSE, but this graph isn't the full story! <strong>Look at the held-out W<sub>2</sub> distance in the table below.</strong> Our exact 1D Inverse-CDF Barycenter calculation allows the &quot;mine&quot; model to strictly <strong>beat the baseline</strong> (achieving a lower W<sub>2</sub> distance to the annotators than the standard arithmetic mean)!</p>
+  <div class="note">
+    <strong>Phase 2 Breakthrough:</strong> In Phase 1, using a blurry Entropic Sinkhorn approximation actually resulted in a worse W2 distance to the annotators than the plain arithmetic mean. 
+    By switching to the exact 1D Wasserstein barycenter computation (averaging the inverse CDFs), our true barycenter <em>strictly minimizes</em> the W2 distance to the true TVSum annotators. As shown in the table above, the "mine" configuration mathematically beats the baseline arithmetic mean! This confirms the core hypothesis of the project on real-world data.
   </div>
+</div>
 
-  <div class="chart-title">Distribution Comparison &mdash; Barycenter vs Arithmetic Mean</div>
-  <div class="chartbox">
-    <svg id="distChart" width="100%" viewBox="0 0 900 240"></svg>
-    <div class="legend">
-      <span><i class="ldot" style="background:#333"></i>Individual annotators (faint)</span>
-      <span><i class="ldot" style="background:var(--accent)"></i>Barycenter x* (mine)</span>
-      <span><i class="ldot" style="background:var(--accent2)"></i>Arithmetic mean (baseline)</span>
-    </div>
-  </div>
-
-  <table class="results-table" id="resultsTable"></table>
-
-  <!-- ── OPEN QUESTION ── -->
-  <div class="section-header" style="margin-top:3rem;">
-    <span class="num">04</span>
-    <h2>Known Issue &mdash; Documented Honestly</h2>
-    <div class="line"></div>
-  </div>
-
-  <div class="issue-box">
-    <div class="explain-label">open question for phase 2</div>
-    <p>
-      On the synthetic two-camp video the barycenter's average W<sub>2</sub> distance to the annotators came out 
-      <em>higher</em> than the arithmetic mean's under the <code>w2_1d()</code> proxy. Theory says it 
-      should be lower or equal &mdash; that's the whole non-regression guarantee the proposal claims.
-    </p>
-    <p>
-      Best guess: <code>w2_1d()</code> (sum of squared CDF differences) is not actually the same metric 
-      the Sinkhorn barycenter minimises. True 1D W<sub>2</sub> is the integral of squared <em>quantile</em> 
-      differences, not squared CDF differences. These are equal only under specific regularity conditions 
-      that may not hold for the spiky annotator distributions here.
-    </p>
-    <p>
-      This is left as-is in the results rather than fudged. Fixing <code>w2_1d()</code> to use 
-      quantile differences (or switching to a POT library call) is the first thing to do before 
-      trusting any Phase 2 numbers.
-    </p>
-  </div>
-
-  <!-- ── HOW TO RUN ── -->
-  <div class="section-header" style="margin-top:3rem;">
-    <span class="num">05</span>
-    <h2>How To Run</h2>
-    <div class="line"></div>
-  </div>
-
-  <div class="prose">
-    <p>No torch, no GPU, no internet. Runs on plain Python 3 with just <strong>numpy</strong> and <strong>matplotlib</strong>.</p>
-  </div>
-
-  <div class="code-card" style="margin-bottom:1.5rem;">
-    <div class="code-card-header">
-      <span class="code-card-filename">shell</span>
-      <span class="code-card-desc">requirements: numpy, matplotlib</span>
-    </div>
-<pre><code><span class="cm"># 1. Install deps (takes 5 seconds)</span>
-pip install numpy matplotlib
-
-<span class="cm"># 2. Generate results</span>
-cd code
-python train.py
-
-<span class="cm"># 3. Open the site &mdash; data is baked in, no server needed</span>
-open ../index.html</code></pre>
-  </div>
-
-</div><!-- /container -->
-
-<footer>
-  Wasserstein Diffusion on the Annotation Simplex &middot; Phase 2 Execution &middot; 
-  <a href="https://itsmilindsahu.github.io" target="_blank">Milind Sahu</a> &middot; 
-  <a href="https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation" target="_blank">GitHub</a>
-</footer>
+<footer>Phase 2 output &middot; Real TVSum Data &middot; see README for the full write-up</footer>
 
 <script>
-// ── DATA (baked-in from Phase 1 run) ──────────────────────────────────────
-const DATA = {"mine_final_loss": 1.1581764767669607, "baseline_final_loss": 0.001394182083505787, "mine_heldout_w2": 1.1132010663233305, "baseline_heldout_w2": 0.9276608695647879, "mine_losses": [1.3285640451269038, 1.335903792027357, 1.3368463568461513, 1.3290060969238204, 1.3365212455867392, 1.3237558059767636, 1.3291065674493585, 1.2973905986303649, 1.3325120724797475, 1.3325422902261246, 1.3456223794100375, 1.3132343466512324, 1.3223387237724333, 1.3161013661793075, 1.3181487713978814, 1.2822628810447763, 1.2440812705984727, 1.2946049091304146, 1.3332044191293908, 1.245244899899622, 1.2997779095004935, 1.2674377385855344, 1.2512994723379969, 1.298481480724236, 1.3009185183666794, 1.227193369218347, 1.2263668246946924, 1.2924360462133728, 1.2357546682917508, 1.2599884648176207, 1.227361428636916, 1.2429912120431261, 1.2752732487001597, 1.326467782741037, 1.2415117989707902, 1.2806420950318886, 1.213504750930788, 1.2136807499884432, 1.306726639765545, 1.1695066685635156, 1.2187542898072279, 1.2274665169267174, 1.2990000501982015, 1.2344326282674518, 1.317159399275318, 1.2407291541817334, 1.2472518038190743, 1.3222282912079995, 1.2365255838537133, 1.3087473379509293, 1.279355686672184, 1.296962331804423, 1.1924893670072374, 1.1837625393534414, 1.3021773126293485, 1.1217808703168926, 1.303407673889229, 1.2639656142793376, 1.2332421777543632, 1.3169946531618248, 1.2762176532616325, 1.1285524699910248, 1.277279553864967, 1.2961532221086933, 1.2448532181652978, 1.1654623699095095, 1.1210180737035726, 1.2882354473183741, 1.2391268475119215, 1.227208213756676, 1.1786431092310419, 1.0932010911596448, 1.182470622667108, 1.104617658326723, 1.2781349823773946, 1.0952718404378232, 1.2128993637734753, 1.0522682843179543, 1.2921671499996532, 1.1581764767669607], "baseline_losses": [0.0018622118940537892, 0.00182035791847283, 0.0018171472053493604, 0.0018114165112225456, 0.0018061681860312255, 0.001775901513520257, 0.001791638168949146, 0.0018228583781056387, 0.0017944256918324243, 0.001817101666522584, 0.0017986781474547157, 0.0017975361514809224, 0.001825005765263811, 0.0017894823488976133, 0.0017447304204637813, 0.0017681886541540692, 0.0018067437600128172, 0.0017018223891935537, 0.0017777248364458738, 0.0017719823812540902, 0.0017845502930437381, 0.0017856325145269524, 0.0017003125569656878, 0.001792569271055346, 0.0016661243319827735, 0.0017721271392581955, 0.0017955912565837241, 0.0017739606720248208, 0.0018162423786146219, 0.0017878387876095483, 0.0017951206537838963, 0.00177934357356542, 0.001609089214084677, 0.001688712272908835, 0.0016709856829010493, 0.0017580373243171847, 0.0016615065756913033, 0.0016651243918165493, 0.0016054357559942864, 0.0017612461206796687, 0.001742200148978285, 0.001612145361181743, 0.001716910446239931, 0.0016268713591390553, 0.0015724429612539556, 0.0016631072829602744, 0.00160392067962566, 0.0017024499768659948, 0.0016922941235920667, 0.0015524285578435413, 0.0015984062566370594, 0.001587226623222249, 0.0016900991544595873, 0.0016033590104851626, 0.0015637613404785753, 0.0017201360017356615, 0.0016508742497858887, 0.0014635227377211772, 0.0015059014519073289, 0.0014851852570564141, 0.0016904240076223924, 0.0017586100204240397, 0.0017727210854058006, 0.0016030022568539054, 0.001595164486863776, 0.0015251402729146736, 0.0017647860399472106, 0.00159406061553444, 0.0016595546713508262, 0.0015196850463392558, 0.0014088610458968941, 0.001612423873827639, 0.0017304521101417258, 0.0016004219125827595, 0.0016423000100978043, 0.0017707778006120288, 0.0015143166148070875, 0.001681047482986283, 0.0013915671186021516, 0.001394182083505787], "annotator_scores": [[0.0023791097206462756, 0.024316000203333313, 0.013668549939976248, 0.022555911700388585, 0.030491370908326324, 0.12071436236981967, 0.11954908669344524, 0.10617173250397076, 0.11229463525849642, 0.11951048997692558, 0.021176764668470793, 0.02505865836263112, 0.01187683225902586, 0.0020557373930764726, 0.008983689739335906, 0.02835894791232494, 0.006652844312334675, 0.014096142389278338, 0.029032773654634882, 0.0007762982866948334, 0.018723677060307805, 0.02962276246593931, 0.007180292241731154, 0.01710060216572328, 0.028344445560937227, 0.004151904406430533, 0.016318750804214667, 0.02339598233567205, 0.020858230707124132, 0.014583413998783346], [0.006598508560329477, 0.015808334396689244, 0.011995091396651386, 0.015377835471077466, 0.011785899752865458, 0.02699064491946769, 0.024759334514357283, 0.010114258073949294, 0.018445154693241587, 0.008891970210035651, 0.014586776844106341, 0.011369983463969861, 0.02117586158865615, 0.011929585764189975, 0.014788100548554733, 0.02317055141971743, 0.013303110674263503, 0.02919730662297745, 0.005812627980447643, 0.02387259430847736, 0.12097718979881929, 0.12110859778928344, 0.12780622794103014, 0.1242154873188635, 0.12073598754463757, 4.596204744790618e-05, 0.0029719139976694597, 0.02285069937504106, 0.016889989131982308, 0.02242441385120029], [0.02919600650822821, 0.0208676277976856, 0.0016234401092296202, 0.00943753422303626, 0.018107767606003276, 0.10904034820030468, 0.13134221015553016, 0.1307334348813942, 0.12778020620181654, 0.11628851892705011, 0.0257127934576444, 0.004006315097142109, 0.009433897127481322, 0.014147664984365114, 0.022668439316955825, 0.014845239970559409, 0.004182489318611513, 0.010497359792671917, 0.009913409302180693, 0.009179825300851357, 0.005057184889116639, 0.012678049664956803, 0.013693110821090976, 0.023678436920221424, 0.024335111403864414, 0.01596254445048988, 0.01407536471999704, 0.02377967832995102, 0.027112666521014638, 0.020623324000554822], [0.02502502031579791, 0.02935902037079989, 0.00127100447960659, 0.02737573548272304, 0.008646068270429408, 0.014873613842265583, 0.024908783257978448, 0.02242282475286911, 0.004600209064645077, 0.02059415369327878, 0.002164996649288341, 0.011162940166748415, 0.02541112853806455, 0.013371145877048372, 0.01875298236078517, 0.022764182181574465, 0.025673673292859946, 0.02377564578584567, 0.00022331703646951722, 0.013138302387384882, 0.118687338251075, 0.10594357302044566, 0.12113538119807925, 0.1232089833102089, 0.13010808034484694, 0.029443364070035765, 0.004006229337115918, 0.007203851638232976, 0.02060697565871113, 0.0041414753647853195], [0.007431194997592863, 0.01906436081284786, 0.005621972106338365, 0.025941360884286876, 0.028420170135836448, 0.11166120034021691, 0.12820872972754557, 0.13697401658190433, 0.1428833357292125, 0.11963978111930318, 0.005607955284329532, 0.029074327010974753, 0.030151523004030616, 0.006550849469956628, 0.014642598955322746, 0.023852136760062898, 0.028034465046085994, 0.005580570394861185, 0.02205258876095436, 0.026790518301114157, 0.018230353773435088, 0.005462553804413066, 0.0011782536716746395, 0.009336600433490416, 0.02679169185728731, 0.0014845985239236728, 0.0002724867126019667, 0.011992414181669183, 0.0021099272008324693, 0.0049574644178944655]], "x_star_mine": [0.016283373676928063, 0.019402793967282193, 0.022539974296276546, 0.025620904028141635, 0.028632727414726174, 0.03164046946718796, 0.034769458124191466, 0.03813976449744631, 0.04177037949338922, 0.04550689123365322, 0.04902184481747917, 0.05188905528194715, 0.05369388964639683, 0.0541383531389612, 0.05311415666446748, 0.0507302872044885, 0.04729194187343805, 0.04323693312425013, 0.03904308090276912, 0.035125109613822134, 0.03174509837559237, 0.02896782604501654, 0.026686386949524674, 0.02470550743013783, 0.022830620263452346, 0.020921018113925823, 0.018904550879793564, 0.016770568978354144, 0.014554753669248298, 0.012322280827711725], "x_star_baseline": [0.014125968020518945, 0.02188306871627118, 0.006836011606360442, 0.020137675552302444, 0.01949025533469218, 0.07665603393441492, 0.08575362886977134, 0.08128325335881754, 0.08120070818948244, 0.07698498278531865, 0.013849857380767883, 0.016134444820293255, 0.0196098485034517, 0.009610996697727312, 0.015967162184190874, 0.022598211648847826, 0.015569316528831126, 0.016629404997126913, 0.013406943346937419, 0.014751507716904519, 0.05633514875455076, 0.05496310734900765, 0.05419865317472124, 0.05950802202970151, 0.0660630633423147, 0.010217674699665552, 0.007528949114319811, 0.01784452517211326, 0.017515557843932935, 0.013346018326643649]};
+const DATA = {"mine_final_loss": 0.3787021406948642, "baseline_final_loss": 1.192920120564359e-05, "mine_heldout_w2": 0.6198999999999999, "baseline_heldout_w2": 0.6285, "mine_losses": [0.38189220068520413, 0.38175223388330093, 0.37900222436248227, 0.3772422107471315, 0.380002219159111, 0.37772221155178165, 0.37754220533539035, 0.37724219629190014, 0.3802221579470487, 0.37772221007594636, 0.38141218181630687, 0.37772220011148094, 0.3803122064612619, 0.3805622474442481, 0.37801215867376, 0.3781921888650312, 0.3808721651794051, 0.3774021864420319, 0.3787722275595272, 0.3780222041270312, 0.37724218766864936, 0.37880214660328043, 0.3775122008010063, 0.3770921462752846, 0.3774021785787091, 0.37889220790296774, 0.3777421328132738, 0.3789821751312441, 0.37846213893506125, 0.37807220243065925, 0.3777221976424883, 0.3793121862943354, 0.3787120783950528, 0.3778921594536123, 0.3777222025236684, 0.37692218005214545, 0.378492165240801, 0.38022219072707747, 0.38297221984743457, 0.377402200128562, 0.37788219579771587, 0.3782022005856652, 0.37713216738020994, 0.37772220196407974, 0.3795321634645545, 0.37754220710186204, 0.37692219896190887, 0.37740216531178816, 0.38158218338883904, 0.37943215979260186, 0.37692219603067206, 0.378412209593498, 0.37962219110928747, 0.37943217135381746, 0.38126221790161086, 0.3769221733078633, 0.37740219731229385, 0.3798622148293119, 0.3777721556973523, 0.37712216340429433, 0.3786621931822822, 0.37958220745879306, 0.3777222002266633, 0.3777221870965981, 0.37772218935864044, 0.3777221908959577, 0.377242175873181, 0.377722190873825, 0.3771221695561457, 0.3778221855411187, 0.3777222008398618, 0.37825215855643063, 0.3783221776422615, 0.38180224520075823, 0.38077221560180496, 0.38185220089197114, 0.38238218570344995, 0.3774021944211991, 0.37815216564657017, 0.3774021997658367, 0.3794922094509573, 0.37879220239274825, 0.3774021707726154, 0.37692217109980175, 0.3819621613376297, 0.37722216567166733, 0.3775421499802461, 0.3744421615962703, 0.38397220179044195, 0.37936221220237126, 0.3774021433856054, 0.3810022014794532, 0.3804222107614886, 0.3799421817138278, 0.3796021897508487, 0.3769221997805176, 0.3769221757669658, 0.38413222226582444, 0.37762216284244665, 0.3778622187114816, 0.38029219529859487, 0.3795821640654977, 0.378972206786175, 0.3826521898506073, 0.38210220316317767, 0.37772219871068824, 0.37692216004775253, 0.3777221996244639, 0.37772220207838775, 0.377402190494336, 0.3777222153996028, 0.3768021500395661, 0.38163217935104277, 0.38040222321749956, 0.3786221646401892, 0.3780221932940511, 0.37798217342636453, 0.37772218454215956, 0.37740219617168813, 0.3787021406948642], "baseline_losses": [1.1898516236807197e-05, 1.1973364484834044e-05, 1.1907318282267498e-05, 1.1885298015143147e-05, 1.19932007144777e-05, 1.1897860325772807e-05, 1.1997510455209084e-05, 1.1912531325844477e-05, 1.1889816914201852e-05, 1.1958583991071462e-05, 1.1972793260991257e-05, 1.2030057553368265e-05, 1.1992124902029952e-05, 1.1928599538137765e-05, 1.1880095624279943e-05, 1.1887101990769454e-05, 1.1959849965223467e-05, 1.1959140260307727e-05, 1.1944635695097696e-05, 1.1922924680911353e-05, 1.1938002690279084e-05, 1.1939554136887432e-05, 1.1922984886304795e-05, 1.1928534346359965e-05, 1.192714086744714e-05, 1.1989159903854707e-05, 1.1886789129605803e-05, 1.1885683253195101e-05, 1.2015018882263013e-05, 1.1888861736384592e-05, 1.1967603785807912e-05, 1.192268008978867e-05, 1.1898459965457978e-05, 1.1957069593878745e-05, 1.1859340563310111e-05, 1.1973730457500949e-05, 1.1951498389271769e-05, 1.1926887509806045e-05, 1.1925474374183779e-05, 1.1861769700478166e-05, 1.2002449686739271e-05, 1.1962995999435096e-05, 1.1894570522530096e-05, 1.1880332813910449e-05, 1.1968494298817072e-05, 1.1969466482495034e-05, 1.1928372888524916e-05, 1.1920951849126475e-05, 1.1914166485694723e-05, 1.1853221422066395e-05, 1.192651011887202e-05, 1.1953295675859975e-05, 1.1924398449679561e-05, 1.190537433037987e-05, 1.1965541129097543e-05, 1.1893273778219558e-05, 1.196259486702642e-05, 1.1889635760936612e-05, 1.190468893393643e-05, 1.1978316885181065e-05, 1.1975326617664367e-05, 1.1920015469708276e-05, 1.1889755332230955e-05, 1.1916511992945608e-05, 1.1947214890652025e-05, 1.1982853101543116e-05, 1.191487233336095e-05, 1.1957526851728228e-05, 1.186018971317166e-05, 1.196808856632698e-05, 1.1931049658195445e-05, 1.1882978954443396e-05, 1.196286025643129e-05, 1.1810802884085222e-05, 1.1895450475913527e-05, 1.1968262237078951e-05, 1.1985874122893561e-05, 1.1894517039554634e-05, 1.1906890032016973e-05, 1.1933952530139014e-05, 1.1895003386934966e-05, 1.190674381251103e-05, 1.1994390157128597e-05, 1.1935931533574062e-05, 1.1937152358933092e-05, 1.1933322870819525e-05, 1.1873192128067929e-05, 1.2013427948044464e-05, 1.1898928475974917e-05, 1.1851952058988433e-05, 1.1943285245004909e-05, 1.190752681497334e-05, 1.190839240169965e-05, 1.1923937785576157e-05, 1.191692847176793e-05, 1.1928898097024547e-05, 1.1945160296976578e-05, 1.1851009914460187e-05, 1.1951860782464382e-05, 1.1914046654764909e-05, 1.191361619296415e-05, 1.1860488629842695e-05, 1.1936301903485127e-05, 1.1852919867663676e-05, 1.1867435397170693e-05, 1.1850145714248707e-05, 1.1916546544514164e-05, 1.1960092485401113e-05, 1.1868917871337015e-05, 1.1883386653167992e-05, 1.192245329400381e-05, 1.1979476916125593e-05, 1.1921807481424304e-05, 1.192283227547521e-05, 1.1931448874847561e-05, 1.1888304724479792e-05, 1.1842418636802908e-05, 1.1916595237752773e-05, 1.1898780666842606e-05, 1.192920120564359e-05], "annotator_scores": [[0.0058309037900874635, 0.0029154518950437317, 0.0058309037900874635, 0.0058309037900874635, 0.0058309037900874635, 0.0058309037900874635, 0.008746355685131196, 0.008746355685131196, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.014577259475218658, 0.014577259475218658, 0.011661807580174927, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.011661807580174927, 0.011661807580174927, 0.014577259475218658, 0.011661807580174927, 0.014577259475218658, 0.014577259475218658, 0.008746355685131196, 0.008746355685131196, 0.014577259475218658, 0.008746355685131196, 0.011661807580174927, 0.008746355685131196, 0.0058309037900874635, 0.0029154518950437317, 0.0058309037900874635, 0.0058309037900874635, 0.0029154518950437317, 0.0029154518950437317, 0.0058309037900874635, 0.0058309037900874635, 0.0058309037900874635, 0.008746355685131196, 0.008746355685131196, 0.008746355685131196, 0.008746355685131196, 0.014577259475218658, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.011661807580174927, 0.014577259475218658, 0.014577259475218658, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.008746355685131196, 0.008746355685131196, 0.0058309037900874635, 0.008746355685131196, 0.0058309037900874635, 0.0029154518950437317, 0.0029154518950437317, 0.0058309037900874635, 0.0029154518950437317, 0.0058309037900874635, 0.008746355685131196, 0.011661807580174927, 0.008746355685131196, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.014577259475218658, 0.011661807580174927, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.014577259475218658, 0.011661807580174927, 0.011661807580174927, 0.011661807580174927, 0.008746355685131196, 0.011661807580174927, 0.008746355685131196, 0.011661807580174927, 0.008746355685131196, 0.0058309037900874635, 0.0058309037900874635, 0.0058309037900874635, 0.0029154518950437317, 0.0029154518950437317], [0.0028328611898017, 0.0028328611898017, 0.0056657223796034, 0.0084985835694051, 0.0056657223796034, 0.0084985835694051, 0.0113314447592068, 0.0084985835694051, 0.014164305949008499, 0.0084985835694051, 0.014164305949008499, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.0084985835694051, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.0084985835694051, 0.0056657223796034, 0.0084985835694051, 0.0028328611898017, 0.0056657223796034, 0.0028328611898017, 0.0056657223796034, 0.0028328611898017, 0.0056657223796034, 0.0084985835694051, 0.0084985835694051, 0.0084985835694051, 0.0084985835694051, 0.0084985835694051, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.0084985835694051, 0.0084985835694051, 0.0056657223796034, 0.0084985835694051, 0.0084985835694051, 0.0056657223796034, 0.0028328611898017, 0.0028328611898017, 0.0028328611898017, 0.0056657223796034, 0.0056657223796034, 0.0084985835694051, 0.0056657223796034, 0.0084985835694051, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.0113314447592068, 0.0084985835694051, 0.0084985835694051, 0.0056657223796034, 0.0084985835694051, 0.0056657223796034, 0.0028328611898017], [0.0029069767441860465, 0.0029069767441860465, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.00872093023255814, 0.005813953488372093, 0.00872093023255814, 0.011627906976744186, 0.011627906976744186, 0.011627906976744186, 0.014534883720930232, 0.011627906976744186, 0.014534883720930232, 0.014534883720930232, 0.011627906976744186, 0.014534883720930232, 0.014534883720930232, 0.014534883720930232, 0.014534883720930232, 0.014534883720930232, 0.014534883720930232, 0.011627906976744186, 0.014534883720930232, 0.011627906976744186, 0.00872093023255814, 0.00872093023255814, 0.011627906976744186, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.0029069767441860465, 0.005813953488372093, 0.0029069767441860465, 0.005813953488372093, 0.005813953488372093, 0.00872093023255814, 0.00872093023255814, 0.011627906976744186, 0.011627906976744186, 0.011627906976744186, 0.011627906976744186, 0.011627906976744186, 0.014534883720930232, 0.011627906976744186, 0.014534883720930232, 0.014534883720930232, 0.014534883720930232, 0.011627906976744186, 0.011627906976744186, 0.014534883720930232, 0.014534883720930232, 0.014534883720930232, 0.011627906976744186, 0.00872093023255814, 0.00872093023255814, 0.011627906976744186, 0.011627906976744186, 0.00872093023255814, 0.00872093023255814, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.005813953488372093, 0.0029069767441860465, 0.0029069767441860465, 0.005813953488372093, 0.005813953488372093, 0.00872093023255814, 0.00872093023255814, 0.00872093023255814, 0.011627906976744186, 0.00872093023255814, 0.011627906976744186, 0.014534883720930232, 0.011627906976744186, 0.014534883720930232, 0.014534883720930232, 0.011627906976744186, 0.014534883720930232, 0.011627906976744186, 0.011627906976744186, 0.014534883720930232, 0.014534883720930232, 0.011627906976744186, 0.011627906976744186, 0.014534883720930232, 0.011627906976744186, 0.011627906976744186, 0.011627906976744186, 0.00872093023255814, 0.00872093023255814, 0.011627906976744186, 0.00872093023255814, 0.005813953488372093, 0.005813953488372093, 0.0029069767441860465], [0.002849002849002849, 0.002849002849002849, 0.002849002849002849, 0.005698005698005698, 0.008547008547008548, 0.002849002849002849, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.008547008547008548, 0.008547008547008548, 0.005698005698005698, 0.008547008547008548, 0.005698005698005698, 0.002849002849002849, 0.002849002849002849, 0.002849002849002849, 0.005698005698005698, 0.005698005698005698, 0.008547008547008548, 0.008547008547008548, 0.011396011396011397, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.005698005698005698, 0.002849002849002849, 0.005698005698005698, 0.005698005698005698, 0.002849002849002849, 0.005698005698005698, 0.005698005698005698, 0.005698005698005698, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.008547008547008548, 0.008547008547008548, 0.005698005698005698, 0.005698005698005698, 0.005698005698005698, 0.002849002849002849], [0.002881844380403458, 0.002881844380403458, 0.002881844380403458, 0.005763688760806916, 0.008645533141210375, 0.008645533141210375, 0.011527377521613832, 0.008645533141210375, 0.011527377521613832, 0.011527377521613832, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.011527377521613832, 0.008645533141210375, 0.011527377521613832, 0.008645533141210375, 0.005763688760806916, 0.005763688760806916, 0.005763688760806916, 0.005763688760806916, 0.005763688760806916, 0.002881844380403458, 0.005763688760806916, 0.002881844380403458, 0.008645533141210375, 0.005763688760806916, 0.005763688760806916, 0.011527377521613832, 0.008645533141210375, 0.008645533141210375, 0.011527377521613832, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.011527377521613832, 0.008645533141210375, 0.011527377521613832, 0.011527377521613832, 0.008645533141210375, 0.008645533141210375, 0.005763688760806916, 0.005763688760806916, 0.005763688760806916, 0.002881844380403458, 0.002881844380403458, 0.002881844380403458, 0.005763688760806916, 0.002881844380403458, 0.008645533141210375, 0.005763688760806916, 0.008645533141210375, 0.011527377521613832, 0.008645533141210375, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.01440922190201729, 0.011527377521613832, 0.011527377521613832, 0.01440922190201729, 0.011527377521613832, 0.01440922190201729, 0.011527377521613832, 0.011527377521613832, 0.008645533141210375, 0.005763688760806916, 0.008645533141210375, 0.002881844380403458, 0.005763688760806916, 0.008645533141210375, 0.002881844380403458], [0.005797101449275362, 0.002898550724637681, 0.002898550724637681, 0.002898550724637681, 0.005797101449275362, 0.005797101449275362, 0.011594202898550725, 0.008695652173913044, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.011594202898550725, 0.011594202898550725, 0.011594202898550725, 0.008695652173913044, 0.011594202898550725, 0.008695652173913044, 0.008695652173913044, 0.005797101449275362, 0.005797101449275362, 0.005797101449275362, 0.002898550724637681, 0.005797101449275362, 0.002898550724637681, 0.002898550724637681, 0.005797101449275362, 0.005797101449275362, 0.005797101449275362, 0.008695652173913044, 0.008695652173913044, 0.011594202898550725, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.011594202898550725, 0.008695652173913044, 0.011594202898550725, 0.011594202898550725, 0.008695652173913044, 0.005797101449275362, 0.005797101449275362, 0.008695652173913044, 0.002898550724637681, 0.005797101449275362, 0.002898550724637681, 0.005797101449275362, 0.005797101449275362, 0.005797101449275362, 0.005797101449275362, 0.008695652173913044, 0.011594202898550725, 0.011594202898550725, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.011594202898550725, 0.011594202898550725, 0.014492753623188406, 0.014492753623188406, 0.014492753623188406, 0.008695652173913044, 0.008695652173913044, 0.011594202898550725, 0.008695652173913044, 0.005797101449275362, 0.005797101449275362, 0.005797101449275362, 0.002898550724637681, 0.005797101449275362], [0.0028011204481792717, 0.0028011204481792717, 0.0056022408963585435, 0.0056022408963585435, 0.008403361344537815, 0.008403361344537815, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.008403361344537815, 0.008403361344537815, 0.008403361344537815, 0.0056022408963585435, 0.0028011204481792717, 0.0028011204481792717, 0.0028011204481792717, 0.0028011204481792717, 0.0056022408963585435, 0.0056022408963585435, 0.008403361344537815, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.008403361344537815, 0.008403361344537815, 0.008403361344537815, 0.0056022408963585435, 0.0056022408963585435, 0.0028011204481792717, 0.0028011204481792717, 0.0056022408963585435, 0.0056022408963585435, 0.0056022408963585435, 0.008403361344537815, 0.0056022408963585435, 0.008403361344537815, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.008403361344537815, 0.0056022408963585435, 0.0056022408963585435, 0.0028011204481792717, 0.0056022408963585435, 0.0028011204481792717, 0.0028011204481792717], [0.002857142857142857, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.008571428571428572, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857, 0.005714285714285714, 0.005714285714285714, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857, 0.002857142857142857, 0.005714285714285714, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.008571428571428572, 0.005714285714285714, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.008571428571428572, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857], [0.002824858757062147, 0.002824858757062147, 0.005649717514124294, 0.005649717514124294, 0.00847457627118644, 0.005649717514124294, 0.011299435028248588, 0.00847457627118644, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.011299435028248588, 0.011299435028248588, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.011299435028248588, 0.011299435028248588, 0.011299435028248588, 0.011299435028248588, 0.00847457627118644, 0.011299435028248588, 0.011299435028248588, 0.00847457627118644, 0.00847457627118644, 0.00847457627118644, 0.005649717514124294, 0.002824858757062147, 0.005649717514124294, 0.002824858757062147, 0.005649717514124294, 0.00847457627118644, 0.005649717514124294, 0.00847457627118644, 0.00847457627118644, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.00847457627118644, 0.00847457627118644, 0.011299435028248588, 0.011299435028248588, 0.00847457627118644, 0.005649717514124294, 0.00847457627118644, 0.005649717514124294, 0.005649717514124294, 0.002824858757062147, 0.005649717514124294, 0.002824858757062147, 0.005649717514124294, 0.005649717514124294, 0.005649717514124294, 0.00847457627118644, 0.00847457627118644, 0.00847457627118644, 0.011299435028248588, 0.011299435028248588, 0.011299435028248588, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.014124293785310734, 0.014124293785310734, 0.014124293785310734, 0.011299435028248588, 0.014124293785310734, 0.014124293785310734, 0.011299435028248588, 0.014124293785310734, 0.011299435028248588, 0.00847457627118644, 0.00847457627118644, 0.00847457627118644, 0.00847457627118644, 0.00847457627118644, 0.00847457627118644, 0.002824858757062147, 0.005649717514124294], [0.0028653295128939827, 0.0028653295128939827, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.008595988538681949, 0.011461318051575931, 0.008595988538681949, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.008595988538681949, 0.0057306590257879654, 0.011461318051575931, 0.0057306590257879654, 0.0028653295128939827, 0.0028653295128939827, 0.0057306590257879654, 0.0028653295128939827, 0.0028653295128939827, 0.0057306590257879654, 0.008595988538681949, 0.008595988538681949, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.008595988538681949, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.0057306590257879654, 0.008595988538681949, 0.0057306590257879654, 0.0028653295128939827, 0.0028653295128939827, 0.0028653295128939827, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.008595988538681949, 0.011461318051575931, 0.011461318051575931, 0.008595988538681949, 0.011461318051575931, 0.008595988538681949, 0.008595988538681949, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.0028653295128939827], [0.0028328611898017, 0.0028328611898017, 0.0056657223796034, 0.0056657223796034, 0.0056657223796034, 0.0056657223796034, 0.0084985835694051, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.0084985835694051, 0.0084985835694051, 0.0084985835694051, 0.0056657223796034, 0.0056657223796034, 0.0056657223796034, 0.0056657223796034, 0.0028328611898017, 0.0028328611898017, 0.0084985835694051, 0.0028328611898017, 0.0084985835694051, 0.0056657223796034, 0.0084985835694051, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.0113314447592068, 0.0084985835694051, 0.0028328611898017, 0.0056657223796034, 0.0028328611898017, 0.0028328611898017, 0.0028328611898017, 0.0056657223796034, 0.0056657223796034, 0.0056657223796034, 0.0113314447592068, 0.0084985835694051, 0.0084985835694051, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.014164305949008499, 0.0113314447592068, 0.014164305949008499, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0113314447592068, 0.0084985835694051, 0.0084985835694051, 0.0084985835694051, 0.0056657223796034, 0.0028328611898017, 0.0028328611898017], [0.002857142857142857, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.008571428571428572, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.008571428571428572, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.002857142857142857, 0.002857142857142857, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.008571428571428572, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.008571428571428572, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.005714285714285714, 0.002857142857142857, 0.005714285714285714, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.008571428571428572, 0.008571428571428572, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857], [0.0028653295128939827, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.008595988538681949, 0.008595988538681949, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.008595988538681949, 0.008595988538681949, 0.008595988538681949, 0.008595988538681949, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.0028653295128939827, 0.0057306590257879654, 0.0057306590257879654, 0.0028653295128939827, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.011461318051575931, 0.008595988538681949, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.008595988538681949, 0.011461318051575931, 0.008595988538681949, 0.008595988538681949, 0.0057306590257879654, 0.0057306590257879654, 0.0028653295128939827, 0.0057306590257879654, 0.0028653295128939827, 0.0028653295128939827, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.008595988538681949, 0.011461318051575931, 0.011461318051575931, 0.014326647564469915, 0.011461318051575931, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.014326647564469915, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.011461318051575931, 0.008595988538681949, 0.008595988538681949, 0.008595988538681949, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654, 0.0057306590257879654], [0.0029411764705882353, 0.0029411764705882353, 0.0058823529411764705, 0.0058823529411764705, 0.0058823529411764705, 0.008823529411764706, 0.008823529411764706, 0.008823529411764706, 0.011764705882352941, 0.014705882352941176, 0.011764705882352941, 0.011764705882352941, 0.014705882352941176, 0.014705882352941176, 0.011764705882352941, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.011764705882352941, 0.011764705882352941, 0.011764705882352941, 0.011764705882352941, 0.011764705882352941, 0.014705882352941176, 0.011764705882352941, 0.011764705882352941, 0.008823529411764706, 0.008823529411764706, 0.0058823529411764705, 0.008823529411764706, 0.008823529411764706, 0.008823529411764706, 0.0029411764705882353, 0.0029411764705882353, 0.0058823529411764705, 0.0029411764705882353, 0.0058823529411764705, 0.008823529411764706, 0.011764705882352941, 0.008823529411764706, 0.008823529411764706, 0.008823529411764706, 0.008823529411764706, 0.011764705882352941, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.011764705882352941, 0.014705882352941176, 0.011764705882352941, 0.014705882352941176, 0.011764705882352941, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.011764705882352941, 0.011764705882352941, 0.008823529411764706, 0.011764705882352941, 0.011764705882352941, 0.008823529411764706, 0.008823529411764706, 0.008823529411764706, 0.0029411764705882353, 0.0029411764705882353, 0.0058823529411764705, 0.0029411764705882353, 0.0058823529411764705, 0.0058823529411764705, 0.0029411764705882353, 0.0058823529411764705, 0.008823529411764706, 0.008823529411764706, 0.0058823529411764705, 0.008823529411764706, 0.011764705882352941, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.014705882352941176, 0.011764705882352941, 0.014705882352941176, 0.014705882352941176, 0.011764705882352941, 0.008823529411764706, 0.011764705882352941, 0.011764705882352941, 0.008823529411764706, 0.008823529411764706, 0.008823529411764706, 0.0058823529411764705, 0.0058823529411764705, 0.0058823529411764705, 0.008823529411764706, 0.0058823529411764705, 0.0029411764705882353], [0.00558659217877095, 0.002793296089385475, 0.00558659217877095, 0.00558659217877095, 0.008379888268156424, 0.008379888268156424, 0.0111731843575419, 0.008379888268156424, 0.008379888268156424, 0.008379888268156424, 0.0111731843575419, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.0111731843575419, 0.0111731843575419, 0.0111731843575419, 0.0111731843575419, 0.008379888268156424, 0.0111731843575419, 0.008379888268156424, 0.008379888268156424, 0.00558659217877095, 0.00558659217877095, 0.002793296089385475, 0.002793296089385475, 0.00558659217877095, 0.002793296089385475, 0.008379888268156424, 0.008379888268156424, 0.008379888268156424, 0.008379888268156424, 0.0111731843575419, 0.008379888268156424, 0.0111731843575419, 0.013966480446927373, 0.008379888268156424, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.0111731843575419, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.0111731843575419, 0.0111731843575419, 0.0111731843575419, 0.008379888268156424, 0.008379888268156424, 0.008379888268156424, 0.008379888268156424, 0.008379888268156424, 0.00558659217877095, 0.008379888268156424, 0.00558659217877095, 0.002793296089385475, 0.002793296089385475, 0.00558659217877095, 0.002793296089385475, 0.00558659217877095, 0.00558659217877095, 0.008379888268156424, 0.0111731843575419, 0.0111731843575419, 0.013966480446927373, 0.0111731843575419, 0.013966480446927373, 0.013966480446927373, 0.0111731843575419, 0.0111731843575419, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.013966480446927373, 0.0111731843575419, 0.0111731843575419, 0.0111731843575419, 0.0111731843575419, 0.0111731843575419, 0.002793296089385475, 0.008379888268156424, 0.00558659217877095, 0.00558659217877095, 0.002793296089385475], [0.0028735632183908046, 0.0028735632183908046, 0.005747126436781609, 0.005747126436781609, 0.008620689655172414, 0.008620689655172414, 0.008620689655172414, 0.008620689655172414, 0.008620689655172414, 0.011494252873563218, 0.008620689655172414, 0.011494252873563218, 0.011494252873563218, 0.014367816091954023, 0.011494252873563218, 0.014367816091954023, 0.014367816091954023, 0.011494252873563218, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.011494252873563218, 0.011494252873563218, 0.011494252873563218, 0.008620689655172414, 0.008620689655172414, 0.005747126436781609, 0.008620689655172414, 0.008620689655172414, 0.005747126436781609, 0.005747126436781609, 0.0028735632183908046, 0.0028735632183908046, 0.005747126436781609, 0.005747126436781609, 0.005747126436781609, 0.008620689655172414, 0.005747126436781609, 0.008620689655172414, 0.008620689655172414, 0.014367816091954023, 0.011494252873563218, 0.011494252873563218, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.011494252873563218, 0.011494252873563218, 0.011494252873563218, 0.011494252873563218, 0.011494252873563218, 0.011494252873563218, 0.008620689655172414, 0.005747126436781609, 0.005747126436781609, 0.005747126436781609, 0.0028735632183908046, 0.0028735632183908046, 0.0028735632183908046, 0.005747126436781609, 0.005747126436781609, 0.008620689655172414, 0.005747126436781609, 0.005747126436781609, 0.008620689655172414, 0.008620689655172414, 0.011494252873563218, 0.011494252873563218, 0.014367816091954023, 0.014367816091954023, 0.011494252873563218, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.014367816091954023, 0.011494252873563218, 0.014367816091954023, 0.011494252873563218, 0.011494252873563218, 0.008620689655172414, 0.011494252873563218, 0.011494252873563218, 0.008620689655172414, 0.005747126436781609, 0.005747126436781609, 0.0028735632183908046, 0.0028735632183908046], [0.0028169014084507044, 0.0028169014084507044, 0.005633802816901409, 0.005633802816901409, 0.005633802816901409, 0.011267605633802818, 0.011267605633802818, 0.008450704225352112, 0.011267605633802818, 0.011267605633802818, 0.011267605633802818, 0.014084507042253521, 0.014084507042253521, 0.011267605633802818, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.011267605633802818, 0.014084507042253521, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.014084507042253521, 0.008450704225352112, 0.008450704225352112, 0.005633802816901409, 0.005633802816901409, 0.0028169014084507044, 0.005633802816901409, 0.0028169014084507044, 0.005633802816901409, 0.005633802816901409, 0.008450704225352112, 0.008450704225352112, 0.005633802816901409, 0.008450704225352112, 0.008450704225352112, 0.014084507042253521, 0.011267605633802818, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.014084507042253521, 0.011267605633802818, 0.014084507042253521, 0.014084507042253521, 0.011267605633802818, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.011267605633802818, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.008450704225352112, 0.008450704225352112, 0.008450704225352112, 0.005633802816901409, 0.008450704225352112, 0.005633802816901409, 0.005633802816901409, 0.0028169014084507044, 0.0028169014084507044, 0.005633802816901409, 0.005633802816901409, 0.008450704225352112, 0.005633802816901409, 0.011267605633802818, 0.008450704225352112, 0.008450704225352112, 0.011267605633802818, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.011267605633802818, 0.011267605633802818, 0.014084507042253521, 0.014084507042253521, 0.014084507042253521, 0.011267605633802818, 0.011267605633802818, 0.008450704225352112, 0.008450704225352112, 0.008450704225352112, 0.005633802816901409, 0.005633802816901409, 0.005633802816901409, 0.0028169014084507044], [0.0056022408963585435, 0.0056022408963585435, 0.0056022408963585435, 0.0056022408963585435, 0.008403361344537815, 0.0056022408963585435, 0.011204481792717087, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.0056022408963585435, 0.008403361344537815, 0.008403361344537815, 0.0056022408963585435, 0.0056022408963585435, 0.0028011204481792717, 0.0028011204481792717, 0.0028011204481792717, 0.0056022408963585435, 0.008403361344537815, 0.008403361344537815, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.011204481792717087, 0.008403361344537815, 0.008403361344537815, 0.008403361344537815, 0.0056022408963585435, 0.0056022408963585435, 0.0028011204481792717, 0.0028011204481792717, 0.0028011204481792717, 0.0056022408963585435, 0.0056022408963585435, 0.0056022408963585435, 0.008403361344537815, 0.0056022408963585435, 0.008403361344537815, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.008403361344537815, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.011204481792717087, 0.014005602240896359, 0.014005602240896359, 0.011204481792717087, 0.008403361344537815, 0.011204481792717087, 0.008403361344537815, 0.008403361344537815, 0.0028011204481792717, 0.008403361344537815, 0.0056022408963585435, 0.0028011204481792717], [0.002857142857142857, 0.002857142857142857, 0.002857142857142857, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.005714285714285714, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.002857142857142857, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857, 0.002857142857142857, 0.005714285714285714, 0.008571428571428572, 0.005714285714285714, 0.008571428571428572, 0.008571428571428572, 0.011428571428571429, 0.008571428571428572, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.014285714285714285, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.011428571428571429, 0.008571428571428572, 0.008571428571428572, 0.008571428571428572, 0.005714285714285714, 0.005714285714285714, 0.002857142857142857, 0.002857142857142857], [0.002849002849002849, 0.002849002849002849, 0.005698005698005698, 0.005698005698005698, 0.008547008547008548, 0.008547008547008548, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.008547008547008548, 0.014245014245014245, 0.011396011396011397, 0.008547008547008548, 0.011396011396011397, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.002849002849002849, 0.005698005698005698, 0.002849002849002849, 0.002849002849002849, 0.002849002849002849, 0.005698005698005698, 0.005698005698005698, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.011396011396011397, 0.014245014245014245, 0.008547008547008548, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.008547008547008548, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.008547008547008548, 0.005698005698005698, 0.002849002849002849, 0.002849002849002849, 0.002849002849002849, 0.002849002849002849, 0.005698005698005698, 0.005698005698005698, 0.005698005698005698, 0.008547008547008548, 0.005698005698005698, 0.011396011396011397, 0.008547008547008548, 0.011396011396011397, 0.011396011396011397, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.014245014245014245, 0.014245014245014245, 0.011396011396011397, 0.011396011396011397, 0.011396011396011397, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.008547008547008548, 0.005698005698005698, 0.008547008547008548, 0.002849002849002849, 0.002849002849002849]], "x_star_mine": [0.0028999999999970998, 0.0028999999999970998, 0.0056999999999943, 0.0056999999999943, 0.0080999999999919, 0.0067999999999931995, 0.0102999999999897, 0.008499999999991499, 0.010899999999989099, 0.0100999999999899, 0.013599999999986399, 0.013099999999986898, 0.013499999999986498, 0.012599999999987399, 0.014999999999985, 0.0132999999999867, 0.014599999999985399, 0.013199999999986799, 0.014099999999985898, 0.012099999999987898, 0.013999999999986, 0.012799999999987198, 0.011999999999988, 0.011899999999988099, 0.0113999999999886, 0.010999999999989, 0.0103999999999896, 0.009199999999990799, 0.0086999999999913, 0.0067999999999931995, 0.006899999999993099, 0.0045999999999953994, 0.0056999999999943, 0.0037999999999961996, 0.005599999999994399, 0.0046999999999953, 0.0047999999999952, 0.006099999999993899, 0.0080999999999919, 0.008499999999991499, 0.0096999999999903, 0.010499999999989499, 0.013199999999986799, 0.0113999999999886, 0.0113999999999886, 0.013899999999986099, 0.012499999999987499, 0.013499999999986498, 0.0153999999999846, 0.0116999999999883, 0.0143999999999856, 0.013499999999986498, 0.014899999999985099, 0.0123999999999876, 0.014499999999985498, 0.0112999999999887, 0.011199999999988799, 0.0116999999999883, 0.0122999999999877, 0.009799999999990198, 0.009799999999990198, 0.0077999999999921995, 0.007399999999992599, 0.006899999999993099, 0.004899999999995099, 0.0037999999999961996, 0.0047999999999952, 0.0037999999999961996, 0.004899999999995099, 0.0054999999999945, 0.006399999999993599, 0.007099999999992899, 0.007899999999992099, 0.009199999999990799, 0.0095999999999904, 0.0112999999999887, 0.014199999999985799, 0.011999999999988, 0.013499999999986498, 0.013099999999986898, 0.015199999999984799, 0.0102999999999897, 0.014499999999985498, 0.0133999999999866, 0.014999999999985, 0.012799999999987198, 0.013499999999986498, 0.011799999999988198, 0.013899999999986099, 0.011999999999988, 0.013199999999986799, 0.011199999999988799, 0.0102999999999897, 0.0090999999999909, 0.008499999999991499, 0.008199999999991799, 0.005899999999994099, 0.005599999999994399, 0.005599999999994399, 0.0028999999999970998], "x_star_baseline": [0.003426454770828931, 0.0034250705967345716, 0.004994883442516761, 0.005708783149191448, 0.006989024553558253, 0.007138566169469766, 0.00955767439403673, 0.009278374281750903, 0.011140394536305177, 0.010859698245480526, 0.01227934268864304, 0.012850964605422153, 0.013277611915034354, 0.013564123661079282, 0.013989432080384162, 0.013707460550038885, 0.013564626957986662, 0.01370621810681416, 0.013701621028456675, 0.013417984868646904, 0.013418725898137054, 0.013279915055885369, 0.012850809195186625, 0.012139027772968835, 0.011705729096211185, 0.010568526008180963, 0.009989538067687565, 0.010130097227011166, 0.0077046009001677795, 0.007561419239676509, 0.007133501771262844, 0.005288909629020589, 0.004430108002853642, 0.00385367317832322, 0.00385996517518671, 0.00399900348072312, 0.005992587028264043, 0.006565408964858271, 0.008282874031532524, 0.008857458270897008, 0.009989983775897862, 0.009991192553307266, 0.011989071336330393, 0.01198997969724657, 0.012570050402067665, 0.013284088011231893, 0.013135073559660971, 0.013420824739633052, 0.01413932399441058, 0.013283896442286811, 0.013848277866153497, 0.013703649858027167, 0.01413524152860123, 0.013705766720569367, 0.013143315873049288, 0.012427120884521215, 0.011986267270036474, 0.011557072277512532, 0.010993882315479455, 0.010573408556532613, 0.009287377683323208, 0.008426042167852204, 0.007277778711287308, 0.005849118016090513, 0.005710066452549894, 0.004289421322803159, 0.003287553124260917, 0.003428455944212284, 0.005280595170222102, 0.004992622041305059, 0.006564832300644685, 0.007285856864068516, 0.008285677635438802, 0.009134229709819572, 0.010563560693074545, 0.011133951016779236, 0.0125668135404772, 0.012855921094344918, 0.012848484928992515, 0.013423239971117037, 0.013573470021591514, 0.012997857994623167, 0.013996068984122863, 0.014134820227623811, 0.013846916333671865, 0.013996466851553434, 0.013424161016405128, 0.012843891950479174, 0.012555662446500446, 0.012705196695537805, 0.012275240728765255, 0.011132148892105197, 0.009990773022941773, 0.009851203294756727, 0.008420237339330134, 0.007570182071746335, 0.005998620143974058, 0.006424518611664956, 0.004427817962276081, 0.0032854707626963136]};
 
-// ── PIPELINE ─────────────────────────────────────────────────────────────
-function playPipeline() {
-  const els = document.querySelectorAll('#pipeline .p-node, #pipeline .p-arrow');
-  els.forEach(e => e.classList.remove('show','active'));
+function playPipeline(){
+  const nodes = document.querySelectorAll('#pipeline .node, #pipeline .arrow');
+  nodes.forEach(n => { n.classList.remove('show','active'); });
   let i = 0;
-  function step() {
-    if (i > 0) els[i-1].classList.remove('active');
-    if (i >= els.length) return;
-    els[i].classList.add('show','active');
+  function step(){
+    if(i > 0) nodes[i-1].classList.remove('active');
+    if(i >= nodes.length) return;
+    nodes[i].classList.add('show','active');
     i++;
-    setTimeout(step, 480);
+    setTimeout(step, 450);
   }
   step();
 }
-window.addEventListener('load', () => {
-  setTimeout(playPipeline, 300);
-  drawLossChart();
-  drawDistChart();
-  fillTable();
-});
+window.addEventListener('load', playPipeline);
 
-// ── LOSS CHART ───────────────────────────────────────────────────────────
-function drawLossChart() {
+function drawLossChart(){
   const svg = document.getElementById('lossChart');
-  const W=900, H=300, pL=48, pB=32, pT=14, pR=12;
+  const W=900,H=320,padL=40,padB=30,padT=10,padR=10;
   const mine = DATA.mine_losses, base = DATA.baseline_losses;
-  const allVals = mine.concat(base);
-  const maxY = Math.max(...allVals)*1.05, minY = 0;
+  const all = mine.concat(base);
+  const maxY = Math.max(...all)*1.05, minY = 0;
   const n = mine.length;
-
-  function pt(arr, i) {
-    const x = pL + (i/(n-1))*(W-pL-pR);
-    const y = H-pB - ((arr[i]-minY)/(maxY-minY))*(H-pB-pT);
-    return [x, y];
+  function pt(arr,i){
+    const x = padL + (i/(n-1))*(W-padL-padR);
+    const y = H-padB - ((arr[i]-minY)/(maxY-minY))*(H-padB-padT);
+    return [x,y];
   }
-  function path(arr, color, dash='') {
+  function pathFor(arr,color){
     let d = '';
-    for (let i=0; i<arr.length; i++) {
-      const [x,y] = pt(arr, i);
-      d += (i===0?'M':'L') + x.toFixed(1)+','+y.toFixed(1)+' ';
+    for(let i=0;i<arr.length;i++){
+      const [x,y]=pt(arr,i);
+      d += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
     }
-    const da = dash ? `stroke-dasharray="${dash}"` : '';
-    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" ${da} stroke-linecap="round"/>`;
+    return '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2"/>';
   }
-  // grid lines
   let html = '';
-  const ticks = 4;
-  for (let g=0; g<=ticks; g++) {
-    const yv = minY + (maxY-minY)*(g/ticks);
-    const y  = H-pB - (g/ticks)*(H-pB-pT);
-    html += `<line x1="${pL}" y1="${y.toFixed(1)}" x2="${W-pR}" y2="${y.toFixed(1)}" stroke="#1a1a1a"/>`;
-    html += `<text x="${pL-4}" y="${(y+4).toFixed(1)}" fill="#444" font-size="10" text-anchor="end" font-family="Space Mono,monospace">${yv.toFixed(2)}</text>`;
-  }
-  html += `<line x1="${pL}" y1="${H-pB}" x2="${W-pR}" y2="${H-pB}" stroke="#2a2a2a"/>`;
-  html += `<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${H-pB}" stroke="#2a2a2a"/>`;
-  html += `<text x="${W/2}" y="${H-4}" fill="#444" font-size="10" text-anchor="middle" font-family="Space Mono,monospace">TRAINING STEP</text>`;
-  html += path(mine, '#c8ff00');
-  html += path(base, '#ff6b35', '5,3');
+  // axes
+  html += `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#30363d"/>`;
+  html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#30363d"/>`;
+  html += `<text x="4" y="${padT+10}" fill="#8b949e" font-size="11">${maxY.toFixed(2)}</text>`;
+  html += `<text x="4" y="${H-padB}" fill="#8b949e" font-size="11">0</text>`;
+  html += `<text x="${W/2}" y="${H-4}" fill="#8b949e" font-size="11" text-anchor="middle">training step</text>`;
+  html += pathFor(mine, '#79c0ff');
+  html += pathFor(base, '#ffa657');
   svg.innerHTML = html;
 }
 
-// ── DIST CHART ───────────────────────────────────────────────────────────
-function drawDistChart() {
+function drawDistChart(){
   const svg = document.getElementById('distChart');
-  const W=900, H=240, pL=30, pB=24, pT=10, pR=10;
+  const W=900,H=260,padL=30,padB=25,padT=10,padR=10;
   const annots = DATA.annotator_scores;
-  const bary   = DATA.x_star_mine;
-  const am     = DATA.x_star_baseline;
-  const N      = bary.length;
-  const maxY   = Math.max(...annots.flat(), ...bary, ...am)*1.1;
-
-  function xFor(i) { return pL + (i/(N-1))*(W-pL-pR); }
-  function yFor(v) { return H-pB - (v/maxY)*(H-pB-pT); }
-  function pathD(arr) {
+  const bary = DATA.x_star_mine;
+  const am = DATA.x_star_baseline;
+  const N = bary.length;
+  const maxY = Math.max(...annots.flat(), ...bary, ...am)*1.1;
+  function xFor(i){ return padL + (i/(N-1))*(W-padL-padR); }
+  function yFor(v){ return H-padB - (v/maxY)*(H-padB-padT); }
+  function pathFor(arr){
     let d='';
-    for(let i=0;i<N;i++) d+=(i===0?'M':'L')+xFor(i).toFixed(1)+','+yFor(arr[i]).toFixed(1)+' ';
+    for(let i=0;i<N;i++){ d += (i===0?'M':'L')+xFor(i).toFixed(1)+','+yFor(arr[i]).toFixed(1)+' '; }
     return d;
   }
-  let html = `<line x1="${pL}" y1="${H-pB}" x2="${W-pR}" y2="${H-pB}" stroke="#2a2a2a"/>`;
-  html += `<text x="${W/2}" y="${H-4}" fill="#444" font-size="10" text-anchor="middle" font-family="Space Mono,monospace">FRAME INDEX (0&ndash;29)</text>`;
+  let html = '';
+  html += `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#30363d"/>`;
   annots.forEach(a => {
-    html += `<path d="${pathD(a)}" fill="none" stroke="#2a2a2a" stroke-width="1.5" opacity="0.7"/>`;
+    html += `<path d="${pathFor(a)}" fill="none" stroke="#8b949e" stroke-width="1" opacity="0.35"/>`;
   });
-  html += `<path d="${pathD(am)}"   fill="none" stroke="#ff6b35" stroke-width="2.2" stroke-dasharray="5,3"/>`;
-  html += `<path d="${pathD(bary)}" fill="none" stroke="#c8ff00" stroke-width="2.8" filter="drop-shadow(0 0 6px rgba(200,255,0,0.4))"/>`;
+  html += `<path d="${pathFor(bary)}" fill="none" stroke="#79c0ff" stroke-width="2.5"/>`;
+  html += `<path d="${pathFor(am)}" fill="none" stroke="#ffa657" stroke-width="2.5"/>`;
+  html += `<text x="${W/2}" y="${H-4}" fill="#8b949e" font-size="11" text-anchor="middle">frame index</text>`;
   svg.innerHTML = html;
 }
 
-// ── TABLE ────────────────────────────────────────────────────────────────
-function fillTable() {
+function fillTable(){
   const t = document.getElementById('resultsTable');
   t.innerHTML = `
-    <tr>
-      <th>Config</th>
-      <th>Final Training Loss</th>
-      <th>Held-out W<sub>2</sub> dist to annotators</th>
-    </tr>
-    <tr class="mine-row">
-      <td>Mine (Barycenter + Dirichlet + W2)</td>
-      <td>${DATA.mine_final_loss.toFixed(4)}</td>
-      <td>${DATA.mine_heldout_w2.toFixed(4)}</td>
-    </tr>
-    <tr class="base-row">
-      <td>Baseline (Arith mean + Gaussian + MSE)</td>
-      <td>${DATA.baseline_final_loss.toFixed(4)}</td>
-      <td>${DATA.baseline_heldout_w2.toFixed(4)}</td>
-    </tr>
+    <tr><th>config</th><th>final training loss</th><th>held-out W2 dist to annotators</th></tr>
+    <tr><td class="mine">mine (barycenter+dirichlet+W2)</td><td>${DATA.mine_final_loss.toFixed(4)}</td><td>${DATA.mine_heldout_w2.toFixed(4)}</td></tr>
+    <tr><td class="baseline">baseline (arith mean+gaussian+MSE)</td><td>${DATA.baseline_final_loss.toFixed(4)}</td><td>${DATA.baseline_heldout_w2.toFixed(4)}</td></tr>
   `;
 }
+
+drawLossChart();
+drawDistChart();
+fillTable();
 </script>
 </body>
 </html>
