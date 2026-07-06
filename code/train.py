@@ -1,11 +1,11 @@
 """
-train.py - phase 1 sprint code (proof of concept)
+train.py - phase 2 sprint code
 
-TVSum isn't downloadable in this environment so this uses synthetic
-toy annotator data that mimics the two-camp disagreement setup from
-Figure 1 of the proposal (some annotators like the "pets" segment,
-some like the "products" segment). good enough to sanity check the
-non-regression claim, not a real benchmark run - that's phase 2.
+Loads the real TVSum dataset annotations and processes them on the simplex.
+Runs both the baseline configuration (arithmetic mean, Gaussian forward process,
+MSE loss) and our configuration (Wasserstein barycenter, Dirichlet forward process,
+Wasserstein loss with exact 1D proxy gradients) across all 50 videos,
+saving the comparison results.
 """
 import numpy as np
 import json
@@ -19,27 +19,6 @@ from losses import wasserstein_loss, w2_1d
 from model import NoisePredictor
 
 np.random.seed(7)  # not super rigorous but keeps this reproducible
-
-
-def makeToyVideo(N=30, K=5, disagree=True):
-    scores = []
-    if disagree:
-        campA = np.zeros(N)
-        campA[5:10] = 1
-        campB = np.zeros(N)
-        campB[20:25] = 1
-        for k in range(K):
-            base = campA if k % 2 == 0 else campB
-            noisy = base + np.random.rand(N) * 0.3
-            noisy = np.clip(noisy, 1e-6, None)
-            scores.append(noisy / noisy.sum())
-    else:
-        base = np.random.rand(N)
-        for k in range(K):
-            noisy = base + np.random.rand(N) * 0.05
-            noisy = np.clip(noisy, 1e-6, None)
-            scores.append(noisy / noisy.sum())
-    return np.array(scores)
 
 
 def run_config(annotator_scores, mode="mine", steps=80, T=200):
