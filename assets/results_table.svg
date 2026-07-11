@@ -1,0 +1,31 @@
+<svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono','Fira Code','Courier New',monospace">
+<defs>
+  <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="3.2" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glowRed" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="2.4" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#111111"/>
+    <stop offset="100%" stop-color="#050505"/>
+  </linearGradient>
+</defs>
+<rect x="0" y="0" width="900" height="220" fill="url(#bgGrad)" rx="14"/>
+<rect x="10" y="14" width="880" height="40" fill="#161616" rx="6"/>
+<text x="34" y="40" fill="#888" font-size="12" letter-spacing="1.5" font-weight="700">CONFIG</text>
+<text x="480" y="40" fill="#888" font-size="12" letter-spacing="1.5" font-weight="700">FINAL TRAINING LOSS</text>
+<text x="690" y="40" fill="#888" font-size="12" letter-spacing="1.5" font-weight="700">HELD-OUT W&#178; DIST</text>
+<rect x="10" y="70" width="880" height="60" fill="#101010" stroke="#222" stroke-width="1" rx="6"/>
+<rect x="10" y="70" width="4" height="60" fill="#7CFC00" filter="url(#glowGreen)" rx="2"/>
+<text x="34" y="108" fill="#7CFC00" font-size="15" font-weight="700">Mine (Barycenter + Dirichlet + W2)</text>
+<text x="480" y="108" fill="#7CFC00" font-size="15" font-weight="700">0.3787</text>
+<text x="690" y="108" fill="#7CFC00" font-size="15" font-weight="700">0.6199</text>
+<rect x="10" y="136" width="880" height="60" fill="#101010" stroke="#222" stroke-width="1" rx="6"/>
+<rect x="10" y="136" width="4" height="60" fill="#ff4d3d" filter="url(#glowRed)" rx="2"/>
+<text x="34" y="174" fill="#ff4d3d" font-size="15" font-weight="700">Baseline (Arith mean + Gaussian + MSE)</text>
+<text x="480" y="174" fill="#ff4d3d" font-size="15" font-weight="700">0.0000</text>
+<text x="690" y="174" fill="#ff4d3d" font-size="15" font-weight="700">0.6285</text>
+</svg>
