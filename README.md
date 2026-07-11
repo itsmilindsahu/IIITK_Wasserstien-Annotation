@@ -138,24 +138,15 @@ Simply open `ui/index.html` after training — no web server required.
 
 Trained on real **TVSum** annotations (50 videos, 20 annotators, 100 frames per video, 120 training steps per config):
 
-| Configuration                           | Training Loss | Held-Out W₂ Distance |
-| ---------------------------------------- | -------------- | ---------------------- |
-| Wasserstein Barycenter + Dirichlet + W₂ | 0.3787         | **0.6199**             |
-| Arithmetic Mean + Gaussian + MSE         | 0.000012       | 0.6285                 |
+![Results Table](assets/results_table.svg)
 
 **Distribution comparison** — barycenter vs arithmetic mean against all 20 (faint) annotators, matching the live dashboard:
 
-![Distribution Comparison](distribution_comparison.svg)
+![Distribution Comparison](assets/distribution_comparison.svg)
 
 **Held-out W² distance (lower is better)** — this is the metric that actually matters, computed identically for both configs:
 
-```mermaid
-xychart-beta
-    title "Held-Out W2 Distance — Lower is Better"
-    x-axis ["Wasserstein Barycenter (mine)", "Arithmetic Mean (baseline)"]
-    y-axis "W2 distance" 0.60 --> 0.64
-    bar [0.6199, 0.6285]
-```
+![Held-Out W2 Comparison](assets/w2_comparison.svg)
 
 The Wasserstein barycenter beats the arithmetic mean by **~1.4%** on held-out W² distance, confirming the non-regression guarantee on real data.
 
