@@ -143,6 +143,10 @@ Trained on real **TVSum** annotations (50 videos, 20 annotators, 100 frames per 
 | Wasserstein Barycenter + Dirichlet + W₂ | 0.3787         | **0.6199**             |
 | Arithmetic Mean + Gaussian + MSE         | 0.000012       | 0.6285                 |
 
+**Distribution comparison** — barycenter vs arithmetic mean against all 20 (faint) annotators, matching the live dashboard:
+
+![Distribution Comparison](distribution_comparison.svg)
+
 **Held-out W² distance (lower is better)** — this is the metric that actually matters, computed identically for both configs:
 
 ```mermaid
