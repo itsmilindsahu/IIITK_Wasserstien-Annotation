@@ -4,10 +4,10 @@
 
 ![Dashboard Demo](https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation/raw/main/assets/dashboard.gif)
 
-![Phase](https://img.shields.io/badge/Phase-1%20Prototype-2b2b2b?style=flat-square)
-![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
-![Dependencies](https://img.shields.io/badge/deps-numpy%20%7C%20matplotlib-013243?style=flat-square)
-![Dataset](https://img.shields.io/badge/dataset-TVSum-8a2be2?style=flat-square)
+![Phase](https://img.shields.io/badge/Phase-1%20Prototype-lightgrey?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3-blue?style=flat-square&logo=python&logoColor=white)
+![Dependencies](https://img.shields.io/badge/deps-numpy%20%7C%20matplotlib-blue?style=flat-square)
+![Dataset](https://img.shields.io/badge/dataset-TVSum-green?style=flat-square)
 ![No GPU](https://img.shields.io/badge/GPU-not%20required-lightgrey?style=flat-square)
 ![License](https://img.shields.io/badge/license-academic%2Fresearch-informational?style=flat-square)
 
@@ -138,23 +138,24 @@ Simply open `ui/index.html` after training — no web server required.
 
 Trained on real **TVSum** annotations (50 videos, 20 annotators, 100 frames per video, 120 training steps per config):
 
-![Results Table](assets/results_table.svg)
+| Configuration                           | Training Loss | Held-Out W₂ Distance |
+| ---------------------------------------- | -------------- | ---------------------- |
+| Wasserstein Barycenter + Dirichlet + W₂ | 0.3787         | **0.6199**             |
+| Arithmetic Mean + Gaussian + MSE         | 0.000012       | 0.6285                 |
 
-**Distribution comparison** — barycenter vs arithmetic mean against all 20 (faint) annotators, matching the live dashboard:
+**Distribution comparison** — barycenter vs arithmetic mean against all 20 annotators:
 
-![Distribution Comparison](assets/distribution_comparison.svg)
+![Distribution Comparison](assets/distribution_comparison.png)
 
 **Held-out W² distance (lower is better)** — this is the metric that actually matters, computed identically for both configs:
 
-![Held-Out W2 Comparison](assets/w2_comparison.svg)
+![Held-Out W2 Comparison](assets/w2_comparison.png)
 
 The Wasserstein barycenter beats the arithmetic mean by **~1.4%** on held-out W² distance, confirming the non-regression guarantee on real data.
 
-> **Note on training loss:** the "mine" training loss (0.3787) is numerically larger than the baseline (0.000012) only because it includes the λ·W² penalty on top of MSE — a units mismatch, not a regression. Don't compare training loss across configs directly; compare held-out W² instead.
+**Training loss curves** — note the "mine" loss is numerically larger only because it includes the λ·W² penalty on top of MSE; it's a units mismatch, not a regression, so don't compare training loss across configs directly — compare held-out W² instead:
 
-Full loss curves over training are generated automatically at `results/loss_curve.png`:
-
-![Loss Curves](results/loss_curve.png)
+![Loss Curves](assets/loss_curve.png)
 
 ---
 
@@ -233,15 +234,6 @@ To keep the implementation lightweight and dependency-free, several components a
 | Dataset   | Real TVSum (auto-downloaded, synthetic fallback) | TVSum / SumMe / FPVSum |
 | Framework | NumPy                       | PyTorch                     |
 | OT Solver | Exact 1D quantile barycenter | Optimized general Sinkhorn |
-
-```mermaid
-xychart-beta
-    title "Phase 1 vs Full Model — Conceptual Complexity"
-    x-axis ["Backbone", "Dataset Scale", "OT Solver"]
-    y-axis "Relative complexity" 0 --> 10
-    bar "Phase 1 prototype" [2, 3, 3]
-    bar "Full model (Phase 2 target)" [9, 9, 8]
-```
 
 The objective is validating the mathematical pipeline on real data rather than achieving state-of-the-art performance.
 
