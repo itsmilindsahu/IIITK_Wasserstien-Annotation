@@ -14,7 +14,7 @@
 **Phase 1 Research Prototype**
 Implementing Wasserstein Barycenters, Dirichlet Diffusion, and Wasserstein Regularization — validated on real **TVSum** data.
 
-🔗 **Full interactive code walkthrough:** [itsmilindsahu.github.io/IIITK_Wasserstien-Annotation](https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/#code)
+ **Full interactive code walkthrough:** [itsmilindsahu.github.io/IIITK_Wasserstien-Annotation](https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/#code)
 
 ---
 
@@ -138,7 +138,7 @@ Evaluated across all **50 videos** in the TVSum dataset under our leak-free prot
 
 *Both parametric (paired $t$-test) and non-parametric (Wilcoxon) tests demonstrate statistically significant improvement ($p < 0.05$).*
 
-### 📊 Full 50-Video Distribution Comparison & Box Plots
+###  Full 50-Video Distribution Comparison & Box Plots
 
 ![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
 
@@ -146,7 +146,7 @@ Evaluated across all **50 videos** in the TVSum dataset under our leak-free prot
 
 ---
 
-### 📈 Score Sharpening & Disagreement Analysis
+###  Score Sharpening & Disagreement Analysis
 
 When annotator preferences diverge under temperature sharpening, the Wasserstein barycenter target shows a substantial advantage over arithmetic averaging on held-out annotators:
 
@@ -164,7 +164,7 @@ When annotator preferences diverge under temperature sharpening, the Wasserstein
 
 ---
 
-### 🎯 Multi-Annotator Consensus Geometry vs. Baseline
+###  Multi-Annotator Consensus Geometry vs. Baseline
 
 ![Annotation Distribution Comparison](assets/distribution_comparison.png)
 
@@ -172,7 +172,7 @@ When annotator preferences diverge under temperature sharpening, the Wasserstein
 
 ---
 
-### 📉 Held-Out W2 and Training Loss Curves
+###  Held-Out W2 and Training Loss Curves
 
 <table>
 <tr>
