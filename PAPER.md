@@ -88,6 +88,9 @@ Starting from $x_T \sim \text{Dir}(\mathbf{1}_N)$, we iteratively predict $\hat{
 
 *Both parametric (paired $t$-test) and non-parametric (Wilcoxon signed-rank) tests confirm that MSPDM achieves statistically significant improvement ($p < 0.05$).*
 
+![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
+*Figure 1: Box plot of held-out $W_2$ distances across all 50 TVSum videos (left) and per-video improvement distribution (right).*
+
 ### 4.2 Score Sharpening Ablation
 
 | Transform | Annotator Spread | Avg $W_2$ Barycenter | Avg $W_2$ Mean | Avg Gap | Win Rate |
@@ -97,6 +100,12 @@ Starting from $x_T \sim \text{Dir}(\mathbf{1}_N)$, we iteratively predict $\hat{
 | `softmax` ($\tau=0.2$) | 65.62 | 33.1866 | 39.8786 | **+6.6921 (+16.62%)** | **9 / 9 (100%)** |
 | `zscore_exp` ($\tau=1.0$) | 7.65 | 3.5318 | 3.7018 | **+0.1700 (+4.10%)** | **9 / 9 (100%)** |
 | `zscore_exp` ($\tau=0.5$) | 30.00 | 14.4088 | 16.4735 | **+2.0648 (+12.24%)** | **9 / 9 (100%)** |
+
+![Sharpening Gap Comparison](assets/sharpening_gap_comparison.png)
+*Figure 2: Performance advantage of Wasserstein Barycenter over Arithmetic Mean across varying degrees of distribution divergence.*
+
+![Annotation Distribution Comparison](assets/distribution_comparison.png)
+*Figure 3: Qualitative comparison of annotator score distributions, Wasserstein barycenter, and arithmetic mean.*
 
 ---
 

@@ -138,7 +138,15 @@ Evaluated across all **50 videos** in the TVSum dataset under our leak-free prot
 
 *Both parametric (paired $t$-test) and non-parametric (Wilcoxon) tests demonstrate statistically significant improvement ($p < 0.05$).*
 
-### Score Sharpening & Disagreement Analysis
+### 📊 Full 50-Video Distribution Comparison & Box Plots
+
+![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
+
+*Figure 1: (Left) Box plot of held-out $W_2$ distances across all 50 TVSum videos. (Right) Per-video $W_2$ reduction distribution showing consistent improvement over the baseline.*
+
+---
+
+### 📈 Score Sharpening & Disagreement Analysis
 
 When annotator preferences diverge under temperature sharpening, the Wasserstein barycenter target shows a substantial advantage over arithmetic averaging on held-out annotators:
 
@@ -149,6 +157,39 @@ When annotator preferences diverge under temperature sharpening, the Wasserstein
 | `softmax` ($\tau=0.2$) | 65.62 | 33.1866 | 39.8786 | **+6.6921 (+16.62%)** | **9 / 9 (100%)** |
 | `zscore_exp` ($\tau=1.0$) | 7.65 | 3.5318 | 3.7018 | **+0.1700 (+4.10%)** | **9 / 9 (100%)** |
 | `zscore_exp` ($\tau=0.5$) | 30.00 | 14.4088 | 16.4735 | **+2.0648 (+12.24%)** | **9 / 9 (100%)** |
+
+![Sharpening Gap Comparison](assets/sharpening_gap_comparison.png)
+
+*Figure 2: Barycenter performance advantage over arithmetic mean as annotator distributions become sharper and more divergent.*
+
+---
+
+### 🎯 Multi-Annotator Consensus Geometry vs. Baseline
+
+![Annotation Distribution Comparison](assets/distribution_comparison.png)
+
+*Figure 3: Multi-annotator distribution comparison on TVSum (video 1) illustrating how the Wasserstein Barycenter preserves distinct consensus peaks while the arithmetic mean creates a blurred profile.*
+
+---
+
+### 📉 Held-Out W2 and Training Loss Curves
+
+<table>
+<tr>
+<td width="50%">
+
+**Held-Out W2 Comparison (50 Videos)**
+![W2 Comparison](assets/w2_comparison.png)
+
+</td>
+<td width="50%">
+
+**Training Loss Curves (Mine vs Baseline)**
+![Loss Curves](assets/loss_curve.png)
+
+</td>
+</tr>
+</table>
 
 ---
 
