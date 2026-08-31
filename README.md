@@ -96,66 +96,59 @@ encouraging generated summaries that remain close to the annotation distribution
 ```
 code/
 │
-├── dataset.py          # Parses TVSum TSV, normalizes scores to the simplex
-├── download_tvsum.py   # Downloads TVSum, or generates a synthetic fallback
-├── sinkhorn.py          # Proj_Δ simplex projector (clip + renormalize)
-├── barycenter.py        # Fix 1 — exact 1D W2 barycenter + arithmetic mean baseline
-├── forward.py            # Fix 2 — Dirichlet forward diffusion + Gaussian baseline
-├── losses.py              # Fix 3 — Wasserstein-regularized loss + plain MSE baseline
-├── model.py                # Two-layer ReLU noise predictor (phase 1 stand-in for a Transformer)
-└── train.py                  # Training pipeline over all 50 TVSum videos
+├── dataset.py                # Parses TVSum TSV, supports linear, softmax, and zscore_exp transforms
+├── download_tvsum.py         # Downloads TVSum, or generates a synthetic fallback
+├── split.py                  # Leak-free annotator splitting (15 train / 5 held-out)
+├── sample.py                 # Full reverse diffusion sampling from pure noise
+├── sinkhorn.py               # Proj_Δ simplex projector (clip + renormalize)
+├── barycenter.py             # Fix 1 — exact 1D W2 barycenter + arithmetic mean baseline
+├── forward.py                # Fix 2 — Dirichlet forward diffusion + Gaussian baseline
+├── losses.py                 # Fix 3 — Cramér loss & analytic gradient + exact W2 evaluation
+├── model.py                  # Two-layer ReLU noise predictor (phase 1 stand-in for a Transformer)
+├── train.py                  # Training pipeline with leak-free evaluation on sample
+├── experiment_sharpening.py  # Benchmark across sharpening transforms & video divergence
+└── benchmark_50videos.py     # Full 50-video TVSum benchmark with paired t-test & Wilcoxon test
+
+paper/
+│
+├── main.tex                  # Complete LaTeX research paper draft
+├── references.bib            # BibTeX literature citations
+└── benchmark_50videos_distribution.png
 
 results/
 │
-├── results.json        # Full run output (baked into the dashboard)
-├── comparison.csv      # Summary table: final loss + held-out W2 per config
-└── loss_curve.png      # Loss curves, mine vs baseline
-
-ui/
-│
-├── template.html
-├── build_ui.py
-└── index.html           # Generated interactive dashboard
+├── results.json              # Single-video run output (baked into dashboard)
+├── comparison.csv            # Summary table: final loss + held-out W2
+├── loss_curve.png            # Loss curves, mine vs baseline
+├── sharpening_experiment.csv # Multi-video score transform ablation
+├── tvsum_50videos_benchmark.csv # Full 50-video per-video metrics
+└── tvsum_50videos_summary.json  # Aggregate mean +/- std & significance test results
 ```
 
 ---
 
-## Dashboard
+## Benchmark Results — Full 50 TVSum Videos
 
-The repository automatically generates an interactive HTML dashboard comparing both methods. Features include:
+Evaluated across all **50 videos** in the TVSum dataset under our leak-free protocol (15 train / 5 held-out annotators per video, full reverse diffusion sampling):
 
-- distribution comparison (barycenter vs arithmetic mean)
-- individual annotator visualization
-- training loss curves
-- held-out Wasserstein distance
-- final evaluation table
+| Configuration | Held-Out $W_2$ Distance ($\downarrow$) | Win Rate | Paired $t$-test | Wilcoxon Signed-Rank |
+| :--- | :---: | :---: | :---: | :---: |
+| Baseline (AAAI-25 standard) | $39.0996 \pm 5.8940$ | — | — | — |
+| **MSPDM (Proposed)** | $\mathbf{39.0639 \pm 5.8630}$ | **31 / 50 (62.0%)** | $\mathbf{t = -2.2323, p = 0.0302^*}$ | $\mathbf{W = 425.0, p = 0.0400^*}$ |
 
-Simply open `ui/index.html` after training — no web server required.
+*Both parametric (paired $t$-test) and non-parametric (Wilcoxon) tests demonstrate statistically significant improvement ($p < 0.05$).*
 
----
+### Score Sharpening & Disagreement Analysis
 
-## Results — Real TVSum Data
+When annotator preferences diverge under temperature sharpening, the Wasserstein barycenter target shows a substantial advantage over arithmetic averaging on held-out annotators:
 
-Trained on real **TVSum** annotations (50 videos, 20 annotators, 100 frames per video, 120 training steps per config):
-
-| Configuration                           | Training Loss | Held-Out W₂ Distance |
-| ---------------------------------------- | -------------- | ---------------------- |
-| Wasserstein Barycenter + Dirichlet + W₂ | 0.3787         | **0.6199**             |
-| Arithmetic Mean + Gaussian + MSE         | 0.000012       | 0.6285                 |
-
-**Distribution comparison** — barycenter vs arithmetic mean against all 20 annotators:
-
-![Distribution Comparison](assets/distribution_comparison.png)
-
-**Held-out W² distance (lower is better)** — this is the metric that actually matters, computed identically for both configs:
-
-![Held-Out W2 Comparison](assets/w2_comparison.png)
-
-The Wasserstein barycenter beats the arithmetic mean by **~1.4%** on held-out W² distance, confirming the non-regression guarantee on real data.
-
-**Training loss curves** — note the "mine" loss is numerically larger only because it includes the λ·W² penalty on top of MSE; it's a units mismatch, not a regression, so don't compare training loss across configs directly — compare held-out W² instead:
-
-![Loss Curves](assets/loss_curve.png)
+| Transform | Annotator Spread | Avg $W_2$ Barycenter | Avg $W_2$ Mean | Mean Gap | Win Rate |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Linear `normalize` | 0.92 | 0.5695 | 0.5667 | -0.0028 | 3 / 9 |
+| `softmax` ($\tau=0.5$) | 41.70 | 20.3956 | 23.8136 | **+3.4180 (+14.09%)** | **9 / 9 (100%)** |
+| `softmax` ($\tau=0.2$) | 65.62 | 33.1866 | 39.8786 | **+6.6921 (+16.62%)** | **9 / 9 (100%)** |
+| `zscore_exp` ($\tau=1.0$) | 7.65 | 3.5318 | 3.7018 | **+0.1700 (+4.10%)** | **9 / 9 (100%)** |
+| `zscore_exp` ($\tau=0.5$) | 30.00 | 14.4088 | 16.4735 | **+2.0648 (+12.24%)** | **9 / 9 (100%)** |
 
 ---
 

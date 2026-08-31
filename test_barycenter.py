@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "code"))
 import numpy as np
 from losses import w2_1d
 
@@ -35,6 +38,7 @@ def wasserstein_barycenter_old(annotator_scores, n_iter=40, reg=0.05):
         bary = np.exp(np.mean(np.log(Ku * u + 1e-16), axis=0))
         bary = bary / bary.sum()
         u = bary[None, :] / Ku.clip(1e-16)
+    return bary
 
 from dataset import load_tvsum_data, get_video_distributions
 import os

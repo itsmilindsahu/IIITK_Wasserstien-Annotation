@@ -1,0 +1,33 @@
+{
+  "num_videos": 50,
+  "mine_heldout_w2": {
+    "mean": 37.710992000000005,
+    "std": 4.886880710881296
+  },
+  "baseline_heldout_w2": {
+    "mean": 37.70748,
+    "std": 4.8845319190861485
+  },
+  "gap_absolute": {
+    "mean": -0.0035120000000004124,
+    "std": 0.1012678014383814
+  },
+  "avg_improvement_pct": -0.008703991982937883,
+  "mine_wins": 28,
+  "total_videos": 50,
+  "win_rate_pct": 56.00000000000001,
+  "statistical_tests": {
+    "paired_t_test": {
+      "t_statistic": 0.2452269112446862,
+      "p_value": 0.8073049021463564,
+      "statistically_significant_p_0_05": false,
+      "statistically_significant_p_0_01": false
+    },
+    "wilcoxon_signed_rank": {
+      "w_statistic": 624.5,
+      "p_value": 0.9010179923007229,
+      "statistically_significant_p_0_05": false,
+      "statistically_significant_p_0_01": false
+    }
+  }
+}
