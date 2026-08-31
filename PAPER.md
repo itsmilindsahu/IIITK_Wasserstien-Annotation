@@ -16,11 +16,16 @@ In this work, we propose a principled geometric framework for **Multi-annotator 
 
 Furthermore, we establish a **leak-free evaluation protocol**: annotators per video are partitioned into a barycenter-construction set ($K_{\text{train}}=15$) and a held-out set ($K_{\text{heldout}}=5$). Evaluation is performed on samples generated from the full reverse diffusion process against held-out annotators using the true 1D Wasserstein distance ($W_2$). Benchmarking across all 50 videos of the TVSum dataset demonstrates that our framework achieves statistically significant improvements over the Euclidean baseline ($p = 0.0302$ on paired $t$-test, $p = 0.0400$ on Wilcoxon signed-rank test), with the Wasserstein barycenter outperforming the arithmetic mean by up to 16.6\% on divergent annotator distributions.
 
+![Earlier vs Now Comparison](assets/earlier_vs_now_comparison.png)
+
 ---
 
 ## 1. Introduction
 
 Supervised video summarization models typically rely on datasets such as TVSum (Song et al., 2015), where each video is annotated by $K = 20$ human raters. Human interest is intrinsically multimodal: some annotators prioritize action sequences, others dialogue, and others character interactions.
+
+![50 Videos Improvement Breakdown](assets/barycenter_vs_mean_50videos_improvement.png)
+*Figure: Direct comparison across all 50 TVSum videos showing held-out $W_2$ error reduction of 16.55% for the Wasserstein Barycenter over Arithmetic Mean.*
 
 Standard diffusion architectures collapse these $K$ vectors via Euclidean averaging:
 $$\bar{x} = \frac{1}{K} \sum_{k=1}^K x^{(k)}$$

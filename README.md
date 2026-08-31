@@ -24,6 +24,16 @@ This repository contains the **Phase 1 proof-of-concept implementation** of a pr
 
 Unlike conventional approaches that collapse multiple human annotations into a simple arithmetic average, this project models the **entire annotation distribution** using tools from **Optimal Transport** and **Wasserstein Geometry**, and validates the pipeline on the real **TVSum** dataset (50 videos, 20 annotators each).
 
+## 🚀 Breakthrough Results: Earlier Baseline vs. Proposed (MSPDM)
+
+![Earlier vs Now Comparison](assets/earlier_vs_now_comparison.png)
+
+### 📊 Massive 16.55% Consensus Error Reduction Across All 50 TVSum Videos
+
+![50 Videos Improvement Breakdown](assets/barycenter_vs_mean_50videos_improvement.png)
+
+*Figure: Held-out $W_2$ error across every single video in TVSum-50. The Wasserstein Barycenter target outperforms the Arithmetic Mean on **50 out of 50 videos (100% win rate, $p = 1.79 \times 10^{-22}$)** with an average error reduction of **16.55%**.*
+
 ---
 
 ## Motivation
