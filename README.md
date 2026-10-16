@@ -105,11 +105,12 @@ Both parametric (paired $t$-test) and non-parametric (Wilcoxon signed-rank) test
 
 We also evaluate frame selection with a top-15% summary budget against held-out annotator summaries across all 50 TVSum videos:
 
-| Metric | Baseline (AAAI-25) | **MSPDM (Proposed)** | Win Rate | Paired $t$-test ($p$-value) | Wilcoxon ($p$-value) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **F1 @ top-15% (%)** $(\uparrow)$ | $14.85 \pm 6.55$ | **$39.25 \pm 5.72$** | **50 / 50 (100%)** | $p = 2.33 \times 10^{-26}$ | $p = 7.53 \times 10^{-10}$ |
+| Method | TVSum F1 @ top-15% (%) $(\uparrow)$ |
+| :--- | :---: |
+| Baseline (AAAI-25) | $14.85 \pm 6.55$ |
+| **Ours (MSPDM)** | **$39.25 \pm 5.72$** |
 
-F1 improves by **24.40 percentage points** over the baseline. The per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
+Mean F1 improves by **24.40 percentage points** over the baseline across 50 videos (50/50 per-video wins; paired $t$-test $p = 2.33 \times 10^{-26}$; Wilcoxon $p = 7.53 \times 10^{-10}$). The per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
 
 ![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
 
