@@ -101,6 +101,16 @@ Under the full MSPDM diffusion pipeline (end-to-end training and reverse samplin
 
 Both parametric (paired $t$-test) and non-parametric (Wilcoxon signed-rank) tests confirm statistically significant improvement ($p < 0.05$).
 
+### Held-Out Summarization F1
+
+We also evaluate frame selection with a top-15% summary budget against held-out annotator summaries across all 50 TVSum videos:
+
+| Metric | Baseline (AAAI-25) | **MSPDM (Proposed)** | Win Rate | Paired $t$-test ($p$-value) | Wilcoxon ($p$-value) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **F1 @ top-15% (%)** $(\uparrow)$ | $14.85 \pm 6.55$ | **$39.25 \pm 5.72$** | **50 / 50 (100%)** | $p = 2.33 \times 10^{-26}$ | $p = 7.53 \times 10^{-10}$ |
+
+F1 improves by **24.40 percentage points** over the baseline. The per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
+
 ![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
 
 *Figure 4: Box plots of held-out $W_2$ distances across all 50 TVSum videos (left) and per-video $W_2$ reduction distribution (right).*
@@ -377,4 +387,3 @@ This project is released for academic and research purposes.
 Wasserstein Diffusion on the Annotation Simplex · Phase 1 Prototype · [Milind Sahu](https://itsmilindsahu.github.io) · [GitHub](https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation)
 
 </div>
-
