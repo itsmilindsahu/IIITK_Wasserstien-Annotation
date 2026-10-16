@@ -101,18 +101,61 @@ Under the full MSPDM diffusion pipeline (end-to-end training and reverse samplin
 
 Both parametric (paired $t$-test) and non-parametric (Wilcoxon signed-rank) tests confirm statistically significant improvement ($p < 0.05$).
 
+### Standard Video-Summarization F-Score Comparison
+
+The following comparison uses the scores and method references supplied for the canonical (Can), augmented (Aug), and transfer (Tran) settings. The final benchmark line previously labeled “Ours” in that table is identified here as **AAAI 2025 (reported)**. Our current project does not yet report results under these same protocols; its row is therefore marked “—” rather than filling it with the non-comparable custom frame-overlap diagnostic below.
+
+| Method | TVSum Can | TVSum Aug | TVSum Tran | SumMe Can | SumMe Aug | SumMe Tran |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dppLSTM (Zhang et al. 2016) | 54.7 | 59.6 | 58.7 | 38.6 | 42.9 | 41.8 |
+| VASNet (Fajtl et al. 2019) | 61.4 | 62.4 | — | 49.7 | 51.1 | — |
+| SUM-FCN (Rochan, Ye, and Wang 2018) | 56.8 | 59.2 | 58.2 | 47.5 | 51.1 | 44.1 |
+| A-AVS (Ji et al. 2019) | 59.4 | 60.8 | — | 43.9 | 44.6 | — |
+| M-AVS (Ji et al. 2019) | 61.0 | 61.8 | — | 44.4 | 46.1 | — |
+| DSNet$_{ab}$ (Zhu et al. 2020) | 62.1 | 63.9 | 59.4 | 50.2 | 50.7 | 46.5 |
+| DSNet$_{af}$ (Zhu et al. 2020) | 61.9 | 62.2 | 58.0 | 51.2 | 53.3 | 47.6 |
+| RSGN (Zhao et al. 2021) | 60.1 | 61.1 | 60.0 | 45.0 | 45.7 | 44.0 |
+| 3DST-UNet$_{sup}$ (Liu et al. 2022) | 58.3 | 58.9 | 56.1 | 47.4 | 49.9 | 47.9 |
+| RR-STG (Zhu et al. 2022) | 63.0 | 63.6 | 59.7 | 53.4 | 54.8 | 45.4 |
+| CFT-GIB$_{sup}$ (Zhong et al. 2023) | 62.7 | 60.3 | 58.0 | 56.0 | 54.8 | 44.0 |
+| VSS-Net (Zhang et al. 2023) | 61.0 | 61.4 | 58.5 | 51.5 | 52.8 | 48.4 |
+| LMVS (Nam et al. 2024) | 60.5 | — | — | 45.8 | — | — |
+| MPFN (Khan et al. 2024) | 62.4 | — | — | 51.9 | — | — |
+| SUM-GAN (Mahasseni, Lam, and Todorovic 2017) | 50.8 | 58.9 | — | 38.7 | 41.7 | — |
+| DR-DSN (Zhou, Qiao, and Xiang 2018) | 57.6 | 58.4 | 57.8 | 41.4 | 42.8 | 42.4 |
+| ACGAN (He et al. 2019) | 58.5 | 58.9 | 57.8 | 46.0 | 47.0 | 44.5 |
+| SUM-GAN-AAE (Apostolidis et al. 2020b) | 58.3 | — | — | 48.9 | — | — |
+| 3DST-UNet$_{unsup}$ (Liu et al. 2022) | 58.3 | 58.4 | 58.0 | 44.6 | 49.5 | 45.7 |
+| CFT-GIB$_{unsup}$ (Zhong et al. 2023) | 62.5 | 60.4 | 57.4 | 55.0 | 54.0 | 42.9 |
+| SSPVS (Li et al. 2023) | 60.3 | 61.8 | 57.8 | 48.7 | 50.4 | 45.8 |
+| AMFM (Zhang, Liu, and Wu 2024) | 61.0 | 60.8 | 58.6 | 51.8 | 52.8 | 46.4 |
+| PRLVS (Wang, Wu, and Yan 2024) | 63.0 | 59.2 | 57.0 | 46.3 | 49.7 | 47.6 |
+| DMFF (Yu et al. 2024) | 61.2 | — | — | 53.0 | — | — |
+| **AAAI 2025 (reported)** | **64.8** | **65.0** | **60.9** | **58.7** | **59.2** | **50.3** |
+| **Ours (this work)** | — | — | — | — | — | — |
+
+The corresponding FPVSum scores supplied for comparison are:
+
+| Method | FPVSum F-score |
+| :--- | ---: |
+| Random (Ho, Chiu, and Wang 2018) | 16.3 |
+| Uniform (Ho, Chiu, and Wang 2018) | 15.1 |
+| TDCNN (Yao, Mei, and Rui 2016) | 28.6 |
+| DSN (Bousmalis et al. 2016) | 22.7 |
+| FPVS (Ho, Chiu, and Wang 2018) | 35.3 |
+| **AAAI 2025 (reported)** | **46.1** |
+| **Ours (this work)** | — |
+
 ### Held-Out Annotator Frame-Overlap (Custom Metric)
 
-As a separate diagnostic, we compare the top 15% of frames ranked by each predicted distribution with the top 15% ranked by each held-out annotator, then average the overlap score across annotators and videos:
+Separately, we compare the top 15% of frames ranked by each predicted distribution with the top 15% ranked by each held-out annotator, then average the overlap score across annotators and videos:
 
 | Method | TVSum held-out top-15% frame overlap (%) $(\uparrow)$ |
 | :--- | :---: |
-| Baseline (AAAI-25) | $14.85 \pm 6.55$ |
+| Baseline (AAAI-25 standard) | $14.85 \pm 6.55$ |
 | **Ours (MSPDM)** | **$39.25 \pm 5.72$** |
 
-This is a custom frame-overlap diagnostic, **not** the standard video-summarization F-score reported in benchmark tables for canonical, augmented, or transfer settings, and it should not be compared directly with those published scores. Here both selected sets have the same 15% size, so the reported F1 equals their intersection divided by the selected-frame budget. The mean overlap is 24.40 percentage points higher for MSPDM across 50 videos (50/50 per-video wins; paired $t$-test $p = 2.33 \times 10^{-26}$; Wilcoxon $p = 7.53 \times 10^{-10}$). Per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
-
-The project does not currently report results for SumMe, the canonical/augmented/transfer protocols, or FPVSum; those entries must not be inferred from this diagnostic.
+This is a custom frame-overlap diagnostic, **not** the standard F-score reported above and should not be compared directly with the canonical/augmented/transfer or FPVSum results. Since both selected sets have the same 15% size, this overlap equals F1. The mean is 24.40 percentage points higher for MSPDM across 50 videos (50/50 per-video wins; paired $t$-test $p = 2.33 \times 10^{-26}$; Wilcoxon $p = 7.53 \times 10^{-10}$). Per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
 
 ![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
 
