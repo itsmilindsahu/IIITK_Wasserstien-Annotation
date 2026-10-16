@@ -101,16 +101,18 @@ Under the full MSPDM diffusion pipeline (end-to-end training and reverse samplin
 
 Both parametric (paired $t$-test) and non-parametric (Wilcoxon signed-rank) tests confirm statistically significant improvement ($p < 0.05$).
 
-### Held-Out Summarization F1
+### Held-Out Annotator Frame-Overlap (Custom Metric)
 
-We also evaluate frame selection with a top-15% summary budget against held-out annotator summaries across all 50 TVSum videos:
+As a separate diagnostic, we compare the top 15% of frames ranked by each predicted distribution with the top 15% ranked by each held-out annotator, then average the overlap score across annotators and videos:
 
-| Method | TVSum F1 @ top-15% (%) $(\uparrow)$ |
+| Method | TVSum held-out top-15% frame overlap (%) $(\uparrow)$ |
 | :--- | :---: |
 | Baseline (AAAI-25) | $14.85 \pm 6.55$ |
 | **Ours (MSPDM)** | **$39.25 \pm 5.72$** |
 
-Mean F1 improves by **24.40 percentage points** over the baseline across 50 videos (50/50 per-video wins; paired $t$-test $p = 2.33 \times 10^{-26}$; Wilcoxon $p = 7.53 \times 10^{-10}$). The per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
+This is a custom frame-overlap diagnostic, **not** the standard video-summarization F-score reported in benchmark tables for canonical, augmented, or transfer settings, and it should not be compared directly with those published scores. Here both selected sets have the same 15% size, so the reported F1 equals their intersection divided by the selected-frame budget. The mean overlap is 24.40 percentage points higher for MSPDM across 50 videos (50/50 per-video wins; paired $t$-test $p = 2.33 \times 10^{-26}$; Wilcoxon $p = 7.53 \times 10^{-10}$). Per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
+
+The project does not currently report results for SumMe, the canonical/augmented/transfer protocols, or FPVSum; those entries must not be inferred from this diagnostic.
 
 ![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
 
