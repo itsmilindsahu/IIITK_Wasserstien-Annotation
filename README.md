@@ -148,14 +148,14 @@ The corresponding FPVSum scores supplied for comparison are:
 
 ### Held-Out Annotator Frame-Overlap (Custom Metric)
 
-Separately, we compare the top 15% of frames ranked by each predicted distribution with the top 15% ranked by each held-out annotator, then average the overlap score across annotators and videos:
+Separately, we evaluate on the official TVSum annotations for all 50 videos. For each video, 15 annotators are used for training and five are held out; after resampling each annotation to 100 frames and applying softmax with temperature 0.5, we compare the top 15% ranked by the generated distribution with the top 15% ranked by each held-out annotator, then average the overlap score across annotators and videos. This run uses the evaluation script defaults of 100 training steps, learning rate 0.01, and pure barycenter target ($\alpha=1.0$). This is the project's TVSum-only held-out protocol, not the canonical/augmented/transfer benchmark protocol above.
 
 | Method | TVSum held-out top-15% frame overlap (%) $(\uparrow)$ |
 | :--- | :---: |
-| Baseline (AAAI-25 standard) | $14.85 \pm 6.55$ |
-| **Ours (MSPDM)** | **$39.25 \pm 5.72$** |
+| Baseline (project implementation) | $15.01 \pm 5.15$ |
+| **Ours (MSPDM)** | $14.93 \pm 4.72$ |
 
-This is a custom frame-overlap diagnostic, **not** the standard F-score reported above and should not be compared directly with the canonical/augmented/transfer or FPVSum results. Since both selected sets have the same 15% size, this overlap equals F1. The mean is 24.40 percentage points higher for MSPDM across 50 videos (50/50 per-video wins; paired $t$-test $p = 2.33 \times 10^{-26}$; Wilcoxon $p = 7.53 \times 10^{-10}$). Per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
+This is a custom frame-overlap diagnostic, **not** the standard F-score reported above and should not be compared directly with the canonical/augmented/transfer or FPVSum results. Since both selected sets have the same 15% size, this overlap equals F1. On this run, MSPDM scored 0.08 percentage points below the baseline and won on 13/50 videos (26%). The difference was not statistically significant (paired $t$-test $p = 0.8006$; Wilcoxon $p = 0.9553$). Per-video results and aggregate statistics are available in [`results/tvsum_50videos_f1_benchmark.csv`](results/tvsum_50videos_f1_benchmark.csv) and [`results/tvsum_50videos_f1_summary.json`](results/tvsum_50videos_f1_summary.json).
 
 ![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
 

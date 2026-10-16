@@ -1,40 +1,40 @@
 {
   "num_videos": 50,
   "mine_mean_f1": {
-    "mean": 39.25333333333333,
-    "std": 5.715301497017815
+    "mean": 14.933333333333335,
+    "std": 4.71981397842433
   },
   "baseline_mean_f1": {
-    "mean": 14.853333333333335,
-    "std": 6.548670045519118
+    "mean": 15.013333333333332,
+    "std": 5.152090476804453
   },
   "gap_absolute": {
-    "mean": 24.40000000000001,
-    "std": 8.127108133974541
+    "mean": -0.07999999999999957,
+    "std": 2.2280015551397656
   },
-  "mine_wins": 50,
+  "mine_wins": 13,
   "total_videos": 50,
-  "win_rate_pct": 100.0,
+  "win_rate_pct": 26.0,
   "statistical_tests": {
     "paired_t_test": {
-      "t_statistic": 21.22945231751707,
-      "p_value": 2.3321795488212502e-26,
-      "statistically_significant_p_0_05": true,
-      "statistically_significant_p_0_01": true
+      "t_statistic": -0.25389812841210013,
+      "p_value": 0.8006366546937539,
+      "statistically_significant_p_0_05": false,
+      "statistically_significant_p_0_01": false
     },
     "wilcoxon_signed_rank": {
-      "w_statistic": 0.0,
-      "p_value": 7.529633786524503e-10,
-      "statistically_significant_p_0_05": true,
-      "statistically_significant_p_0_01": true
+      "w_statistic": 261.0,
+      "p_value": 0.9552500217642262,
+      "statistically_significant_p_0_05": false,
+      "statistically_significant_p_0_01": false
     }
   },
   "mean_spearman_rho": {
-    "mine": 0.8571236138764021,
-    "baseline": -0.0039886228458628405
+    "mine": 0.007888323781880958,
+    "baseline": 0.00562569141380701
   },
   "mean_kendall_tau": {
-    "mine": 0.709110308434872,
-    "baseline": -0.002762357749894974
+    "mine": 0.005908329577084636,
+    "baseline": 0.004355168343870015
   }
 }
