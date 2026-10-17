@@ -8,22 +8,28 @@ def alpha_bar(t, T=200, s=0.008):
     return f(t) / f(0)
 
 
-def dirichlet_noise(N, alpha=1.0):
-    return np.random.dirichlet(alpha * np.ones(N))
+def dirichlet_noise(N, alpha=1.0, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
+    return rng.dirichlet(alpha * np.ones(N))
 
 
-def forward_step_mine(x_star, t, T=200):
+def forward_step_mine(x_star, t, T=200, rng=None):
+    if rng is None:
+        rng = np.random.default_rng()
     ab = alpha_bar(t, T)
-    delta = dirichlet_noise(len(x_star))
+    delta = dirichlet_noise(len(x_star), rng=rng)
     xt = np.sqrt(ab) * x_star + np.sqrt(1 - ab) * delta
     xt = sinkhorn_projection(xt, n_iter=3)  # this is the Proj_delta step from Eq 4
     return xt
 
 
-def forward_step_baseline(x_star, t, T=200):
+def forward_step_baseline(x_star, t, T=200, rng=None):
     # original AAAI-25 style gaussian forward process, kept around for comparison
+    if rng is None:
+        rng = np.random.default_rng()
     ab = alpha_bar(t, T)
-    noise = np.random.randn(len(x_star)) * 0.1
+    noise = rng.standard_normal(len(x_star)) * 0.1
     xt = np.sqrt(ab) * x_star + np.sqrt(1 - ab) * noise
     xt = np.clip(xt, 0, None)
     s = xt.sum()

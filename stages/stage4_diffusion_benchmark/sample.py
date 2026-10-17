@@ -36,7 +36,7 @@ def generate_sample(net, N, T=200, mode="mine", rng=None):
         rng = np.random.default_rng()
 
     if mode == "mine":
-        xt = dirichlet_noise(N, alpha=1.0)
+        xt = dirichlet_noise(N, alpha=1.0, rng=rng)
     else:
         # start from a valid point on the simplex for the baseline too,
         # for a fair comparison (uniform + small noise, then renormalize)
@@ -46,9 +46,9 @@ def generate_sample(net, N, T=200, mode="mine", rng=None):
         x0_hat = net.forward(xt, t)
         if t > 1:
             if mode == "mine":
-                xt = forward_step_mine(x0_hat, t - 1, T)
+                xt = forward_step_mine(x0_hat, t - 1, T, rng=rng)
             else:
-                xt = forward_step_baseline(x0_hat, t - 1, T)
+                xt = forward_step_baseline(x0_hat, t - 1, T, rng=rng)
         else:
             xt = x0_hat
 

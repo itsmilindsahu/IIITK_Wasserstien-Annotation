@@ -17,13 +17,16 @@ import sys
 import json
 import csv
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from scipy import stats
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from dataset import load_tvsum_data, get_video_distributions
+from dataset import load_tvsum_data, get_video_distributions, stable_seed
 from download_tvsum import download_or_generate_tvsum
-from barycenter import wasserstein_barycenter, arithmetic_mean
+from barycenter import wasserstein_barycenter, arithmetic_mean, blended_barycenter
 from forward import forward_step_mine, forward_step_baseline
 from losses import wasserstein_loss, w2_1d
 from model import NoisePredictor
@@ -72,7 +75,7 @@ def evaluate_f1_and_correlations(predicted_dist, ground_truth_scores, budget_pct
     }
 
 
-def run_full_comparison(n_videos=50, frames=100, steps=100):
+def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0.01):
     tsv_path = os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv")
     if not os.path.exists(tsv_path):
         download_or_generate_tvsum(tsv_path)
@@ -94,16 +97,21 @@ def run_full_comparison(n_videos=50, frames=100, steps=100):
             raw = raw[:, indices]
 
         dist = get_video_distributions(raw, method="softmax", temperature=0.5)
-        vid_seed = abs(hash(vid)) % (2**31 - 1)
+        vid_seed = stable_seed(vid)
         train_ann, heldout_ann = split_annotators(dist, n_holdout=5, seed=vid_seed)
 
         # 1. Train Proposed (Mine)
-        x_star_mine = wasserstein_barycenter(train_ann)
-        net_mine = NoisePredictor(frames)
-        rng = np.random.default_rng(vid_seed)
+        x_star_mine = blended_barycenter(train_ann, alpha=bary_alpha)
+        # Both nets get the SAME initial weights (seeded from vid_seed) so that
+        # differences below are attributable to the training target/process, not
+        # to which config got luckier random weight init -- and are directly
+        # comparable across different bary_alpha values, since vid_seed doesn't
+        # change with alpha.
+        net_mine = NoisePredictor(frames, lr=lr, rng=np.random.default_rng(vid_seed))
+        rng = np.random.default_rng(vid_seed + 1000)  # separate stream for the t-schedule
         for _ in range(steps):
             t = rng.integers(1, 200)
-            xt = forward_step_mine(x_star_mine, t)
+            xt = forward_step_mine(x_star_mine, t, rng=rng)
             eps_hat = net_mine.forward(xt, t)
             grad_mse = 2 * (eps_hat - x_star_mine) / frames
             P = np.cumsum(eps_hat)
@@ -118,10 +126,10 @@ def run_full_comparison(n_videos=50, frames=100, steps=100):
 
         # 2. Train Baseline (AAAI-25)
         x_star_base = arithmetic_mean(train_ann)
-        net_base = NoisePredictor(frames)
+        net_base = NoisePredictor(frames, lr=lr, rng=np.random.default_rng(vid_seed))
         for _ in range(steps):
             t = rng.integers(1, 200)
-            xt = forward_step_baseline(x_star_base, t)
+            xt = forward_step_baseline(x_star_base, t, rng=rng)
             eps_hat = net_base.forward(xt, t)
             grad_mse = 2 * (eps_hat - x_star_base) / frames
             net_base.step(xt, t, grad_mse)
@@ -188,6 +196,110 @@ def print_comparison_table(metrics):
     print("=" * 85)
 
 
+def analyze_and_save(metrics, records, output_dir="results"):
+    """
+    Builds the AAAI-style F1-score headline comparison (mirrors the
+    Held-Out W2 benchmark output in benchmark_50videos.py, but keyed on
+    Mean F1-Score @ top-15% budget instead of W2 distance), and dumps
+    per-video CSV, a JSON summary with significance tests, and a figure.
+    """
+    output_dir = os.path.join(os.path.dirname(__file__), "..", output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    mine_f1 = np.array(metrics["mine"]["f1"])
+    base_f1 = np.array(metrics["baseline"]["f1"])
+    gaps = mine_f1 - base_f1
+
+    mine_mean, mine_std = float(np.mean(mine_f1)), float(np.std(mine_f1, ddof=1))
+    base_mean, base_std = float(np.mean(base_f1)), float(np.std(base_f1, ddof=1))
+    gap_mean, gap_std = float(np.mean(gaps)), float(np.std(gaps, ddof=1))
+    wins = int(np.sum(gaps > 0))
+    total = len(mine_f1)
+    win_rate = (wins / total) * 100.0
+
+    ttest_res = stats.ttest_rel(mine_f1, base_f1)
+    t_stat, t_pval = float(ttest_res.statistic), float(ttest_res.pvalue)
+    wilcoxon_res = stats.wilcoxon(mine_f1, base_f1, alternative='two-sided')
+    w_stat, w_pval = float(wilcoxon_res.statistic), float(wilcoxon_res.pvalue)
+
+    summary = {
+        "num_videos": total,
+        "mine_mean_f1": {"mean": mine_mean, "std": mine_std},
+        "baseline_mean_f1": {"mean": base_mean, "std": base_std},
+        "gap_absolute": {"mean": gap_mean, "std": gap_std},
+        "mine_wins": wins,
+        "total_videos": total,
+        "win_rate_pct": win_rate,
+        "statistical_tests": {
+            "paired_t_test": {
+                "t_statistic": t_stat,
+                "p_value": t_pval,
+                "statistically_significant_p_0_05": t_pval < 0.05,
+                "statistically_significant_p_0_01": t_pval < 0.01,
+            },
+            "wilcoxon_signed_rank": {
+                "w_statistic": w_stat,
+                "p_value": w_pval,
+                "statistically_significant_p_0_05": w_pval < 0.05,
+                "statistically_significant_p_0_01": w_pval < 0.01,
+            },
+        },
+        "mean_spearman_rho": {
+            "mine": float(np.mean(metrics["mine"]["spearman"])),
+            "baseline": float(np.mean(metrics["baseline"]["spearman"])),
+        },
+        "mean_kendall_tau": {
+            "mine": float(np.mean(metrics["mine"]["kendall"])),
+            "baseline": float(np.mean(metrics["baseline"]["kendall"])),
+        },
+    }
+
+    # Save per-video CSV
+    csv_path = os.path.join(output_dir, "tvsum_50videos_f1_benchmark.csv")
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(records[0].keys()))
+        writer.writeheader()
+        writer.writerows(records)
+
+    # Save JSON summary
+    json_path = os.path.join(output_dir, "tvsum_50videos_f1_summary.json")
+    with open(json_path, "w") as f:
+        json.dump(summary, f, indent=2)
+
+    # Figure: box plot of F1 + per-video gap histogram (mirrors the W2 figure)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+    ax1.boxplot([mine_f1, base_f1], tick_labels=["Proposed (MSPDM)", "Baseline (AAAI-25)"],
+                patch_artist=True,
+                boxprops=dict(facecolor="#d0e1fd", color="#1f77b4"),
+                medianprops=dict(color="#08306b", linewidth=2))
+    ax1.set_ylabel("Mean F1-Score (%) @ Top-15% Budget (Higher is Better)")
+    ax1.set_title("Held-Out F1-Score Across 50 TVSum Videos")
+    ax1.grid(True, linestyle="--", alpha=0.5)
+
+    ax2.hist(gaps, bins=15, color="#2ca02c", alpha=0.7, edgecolor="black")
+    ax2.axvline(0, color="red", linestyle="--", linewidth=1.5, label="Zero Difference")
+    ax2.axvline(gap_mean, color="darkgreen", linestyle="-", linewidth=2, label=f"Mean Gap = {gap_mean:+.2f} pts")
+    ax2.set_xlabel("F1 Improvement (Mine - Baseline) per Video (pts)")
+    ax2.set_ylabel("Number of Videos")
+    ax2.set_title("Per-Video F1 Improvement Distribution")
+    ax2.legend()
+    ax2.grid(True, linestyle="--", alpha=0.5)
+
+    plt.tight_layout()
+    plot_path = os.path.join(output_dir, "benchmark_50videos_f1_distribution.png")
+    plt.savefig(plot_path, dpi=150)
+    plt.close()
+
+    print(f"Saved per-video F1 results to: {csv_path}")
+    print(f"Saved F1 summary metrics to:  {json_path}")
+    print(f"Saved F1 benchmark figure to: {plot_path}")
+
+    return summary
+
+
 if __name__ == "__main__":
-    metrics, records = run_full_comparison(50)
+    n = int(sys.argv[1]) if len(sys.argv) > 1 else 50
+    metrics, records = run_full_comparison(n_videos=n)
     print_comparison_table(metrics)
+    analyze_and_save(metrics, records)

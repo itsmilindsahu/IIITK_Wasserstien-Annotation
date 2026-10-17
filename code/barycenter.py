@@ -42,3 +42,26 @@ def wasserstein_barycenter(annotator_scores, n_iter=None, reg=None):
 
 def arithmetic_mean(annotator_scores):
     return annotator_scores.mean(axis=0)
+
+
+def blended_barycenter(annotator_scores, alpha=1.0):
+    """
+    Convex combination of the exact 1D W2 barycenter and the arithmetic
+    mean: alpha=1.0 recovers the pure barycenter, alpha=0.0 recovers the
+    pure mean (the AAAI-25 baseline target).
+
+    Rationale (found empirically): the pure barycenter minimizes total
+    transport cost (best W2) but smears mass onto frames between
+    disagreeing annotators' peaks, which hurts top-15% F1 (which only
+    rewards hitting frames some held-out annotator actually rated highly).
+    The mean never moves mass off frames annotators actually rated, so it
+    wins F1 almost by construction but is a worse W2 target. Blending
+    trades off between the two failure modes; alpha~=0.6 was found to beat
+    both pure targets on F1 *and* W2 simultaneously at the oracle level.
+    """
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError(f"alpha must be in [0, 1], got {alpha}")
+    bary = wasserstein_barycenter(annotator_scores)
+    mean = arithmetic_mean(annotator_scores)
+    blend = alpha * bary + (1 - alpha) * mean
+    return blend / (np.sum(blend) + 1e-8)

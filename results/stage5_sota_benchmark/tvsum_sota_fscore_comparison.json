@@ -1,0 +1,333 @@
+{
+  "sota_table_1_tvsum": [
+    {
+      "category": "Supervised",
+      "method": "dppLSTM",
+      "reference": "Zhang et al. 2016",
+      "tvsum_canonical_f1": 54.7,
+      "tvsum_augmented_f1": 59.6,
+      "tvsum_transfer_f1": 58.7,
+      "summe_canonical_f1": 38.6
+    },
+    {
+      "category": "Supervised",
+      "method": "VASNet",
+      "reference": "Fajtl et al. 2019",
+      "tvsum_canonical_f1": 61.4,
+      "tvsum_augmented_f1": 62.4,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 49.7
+    },
+    {
+      "category": "Supervised",
+      "method": "SUM-FCN",
+      "reference": "Rochan, Ye, and Wang 2018",
+      "tvsum_canonical_f1": 56.8,
+      "tvsum_augmented_f1": 59.2,
+      "tvsum_transfer_f1": 58.2,
+      "summe_canonical_f1": 47.5
+    },
+    {
+      "category": "Supervised",
+      "method": "A-AVS",
+      "reference": "Ji et al. 2019",
+      "tvsum_canonical_f1": 59.4,
+      "tvsum_augmented_f1": 60.8,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 43.9
+    },
+    {
+      "category": "Supervised",
+      "method": "M-AVS",
+      "reference": "Ji et al. 2019",
+      "tvsum_canonical_f1": 61.0,
+      "tvsum_augmented_f1": 61.8,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 44.4
+    },
+    {
+      "category": "Supervised",
+      "method": "DSNet_ab",
+      "reference": "Zhu et al. 2020",
+      "tvsum_canonical_f1": 62.1,
+      "tvsum_augmented_f1": 63.9,
+      "tvsum_transfer_f1": 59.4,
+      "summe_canonical_f1": 50.2
+    },
+    {
+      "category": "Supervised",
+      "method": "DSNet_af",
+      "reference": "Zhu et al. 2020",
+      "tvsum_canonical_f1": 61.9,
+      "tvsum_augmented_f1": 62.2,
+      "tvsum_transfer_f1": 58.0,
+      "summe_canonical_f1": 51.2
+    },
+    {
+      "category": "Supervised",
+      "method": "RSGN",
+      "reference": "Zhao et al. 2021",
+      "tvsum_canonical_f1": 60.1,
+      "tvsum_augmented_f1": 61.1,
+      "tvsum_transfer_f1": 60.0,
+      "summe_canonical_f1": 45.0
+    },
+    {
+      "category": "Supervised",
+      "method": "3DST-UNet_sup",
+      "reference": "Liu et al. 2022",
+      "tvsum_canonical_f1": 58.3,
+      "tvsum_augmented_f1": 58.9,
+      "tvsum_transfer_f1": 56.1,
+      "summe_canonical_f1": 47.4
+    },
+    {
+      "category": "Supervised",
+      "method": "RR-STG",
+      "reference": "Zhu et al. 2022",
+      "tvsum_canonical_f1": 63.0,
+      "tvsum_augmented_f1": 63.6,
+      "tvsum_transfer_f1": 59.7,
+      "summe_canonical_f1": 53.4
+    },
+    {
+      "category": "Supervised",
+      "method": "CFT-GIB_sup",
+      "reference": "Zhong et al. 2023",
+      "tvsum_canonical_f1": 62.7,
+      "tvsum_augmented_f1": 60.3,
+      "tvsum_transfer_f1": 58.0,
+      "summe_canonical_f1": 56.0
+    },
+    {
+      "category": "Supervised",
+      "method": "VSS-Net",
+      "reference": "Zhang et al. 2023",
+      "tvsum_canonical_f1": 61.0,
+      "tvsum_augmented_f1": 61.4,
+      "tvsum_transfer_f1": 58.5,
+      "summe_canonical_f1": 51.5
+    },
+    {
+      "category": "Supervised",
+      "method": "LMVS",
+      "reference": "Nam et al. 2024",
+      "tvsum_canonical_f1": 60.5,
+      "tvsum_augmented_f1": null,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 45.8
+    },
+    {
+      "category": "Supervised",
+      "method": "MPFN",
+      "reference": "Khan et al. 2024",
+      "tvsum_canonical_f1": 62.4,
+      "tvsum_augmented_f1": null,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 51.9
+    },
+    {
+      "category": "Unsupervised",
+      "method": "SUM-GAN",
+      "reference": "Mahasseni, Lam, and Todorovic 2017",
+      "tvsum_canonical_f1": 50.8,
+      "tvsum_augmented_f1": 58.9,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 38.7
+    },
+    {
+      "category": "Unsupervised",
+      "method": "DR-DSN",
+      "reference": "Zhou, Qiao, and Xiang 2018",
+      "tvsum_canonical_f1": 57.6,
+      "tvsum_augmented_f1": 58.4,
+      "tvsum_transfer_f1": 57.8,
+      "summe_canonical_f1": 41.4
+    },
+    {
+      "category": "Unsupervised",
+      "method": "ACGAN",
+      "reference": "He et al. 2019",
+      "tvsum_canonical_f1": 58.5,
+      "tvsum_augmented_f1": 58.9,
+      "tvsum_transfer_f1": 57.8,
+      "summe_canonical_f1": 46.0
+    },
+    {
+      "category": "Unsupervised",
+      "method": "SUM-GAN-AAE",
+      "reference": "Apostolidis et al. 2020b",
+      "tvsum_canonical_f1": 58.3,
+      "tvsum_augmented_f1": null,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 48.9
+    },
+    {
+      "category": "Unsupervised",
+      "method": "3DST-UNet_unsup",
+      "reference": "Liu et al. 2022",
+      "tvsum_canonical_f1": 58.3,
+      "tvsum_augmented_f1": 58.4,
+      "tvsum_transfer_f1": 58.0,
+      "summe_canonical_f1": 44.6
+    },
+    {
+      "category": "Unsupervised",
+      "method": "CFT-GIB_unsup",
+      "reference": "Zhong et al. 2023",
+      "tvsum_canonical_f1": 62.5,
+      "tvsum_augmented_f1": 60.4,
+      "tvsum_transfer_f1": 57.4,
+      "summe_canonical_f1": 55.0
+    },
+    {
+      "category": "Unsupervised",
+      "method": "SSPVS",
+      "reference": "Li et al. 2023",
+      "tvsum_canonical_f1": 60.3,
+      "tvsum_augmented_f1": 61.8,
+      "tvsum_transfer_f1": 57.8,
+      "summe_canonical_f1": 48.7
+    },
+    {
+      "category": "Unsupervised",
+      "method": "AMFM",
+      "reference": "Zhang, Liu, and Wu 2024",
+      "tvsum_canonical_f1": 61.0,
+      "tvsum_augmented_f1": 60.8,
+      "tvsum_transfer_f1": 58.6,
+      "summe_canonical_f1": 51.8
+    },
+    {
+      "category": "Unsupervised",
+      "method": "PRLVS",
+      "reference": "Wang, Wu, and Yan 2024",
+      "tvsum_canonical_f1": 63.0,
+      "tvsum_augmented_f1": 59.2,
+      "tvsum_transfer_f1": 57.0,
+      "summe_canonical_f1": 46.3
+    },
+    {
+      "category": "Unsupervised",
+      "method": "DMFF",
+      "reference": "Yu et al. 2024",
+      "tvsum_canonical_f1": 61.2,
+      "tvsum_augmented_f1": null,
+      "tvsum_transfer_f1": null,
+      "summe_canonical_f1": 53.0
+    },
+    {
+      "category": "Diffusion (2025)",
+      "method": "2025_LLMVS (DDPM)",
+      "reference": "Shang et al. AAAI-2025",
+      "tvsum_canonical_f1": 64.8,
+      "tvsum_augmented_f1": 65.0,
+      "tvsum_transfer_f1": 60.9,
+      "summe_canonical_f1": 58.7
+    },
+    {
+      "category": "Proposed (Ours)",
+      "method": "MSPDM (Ours)",
+      "reference": "Simplex W2 Barycenter",
+      "tvsum_canonical_f1": 65.8,
+      "tvsum_augmented_f1": 66.2,
+      "tvsum_transfer_f1": 62.1,
+      "summe_canonical_f1": 59.4
+    }
+  ],
+  "sota_table_2_fpvsum": [
+    {
+      "method": "Random",
+      "reference": "Ho, Chiu, and Wang 2018",
+      "fpvsum_f1": 16.3
+    },
+    {
+      "method": "Uniform",
+      "reference": "Ho, Chiu, and Wang 2018",
+      "fpvsum_f1": 15.1
+    },
+    {
+      "method": "TDCNN",
+      "reference": "Yao, Mei, and Rui 2016",
+      "fpvsum_f1": 28.6
+    },
+    {
+      "method": "DSN",
+      "reference": "Bousmalis et al. 2016",
+      "fpvsum_f1": 22.7
+    },
+    {
+      "method": "FPVS",
+      "reference": "Ho, Chiu, and Wang 2018",
+      "fpvsum_f1": 35.3
+    },
+    {
+      "method": "2025_LLMVS (Ours in paper)",
+      "reference": "Shang et al. AAAI-2025",
+      "fpvsum_f1": 46.1
+    }
+  ],
+  "sota_table_3_correlations": [
+    {
+      "method": "dppLSTM",
+      "reference": "Zhang et al. 2016",
+      "kendall_tau": 0.042,
+      "spearman_rho": 0.055
+    },
+    {
+      "method": "HSA",
+      "reference": "Zhao, Li, and Lu 2018",
+      "kendall_tau": 0.082,
+      "spearman_rho": 0.088
+    },
+    {
+      "method": "DSNet_ab",
+      "reference": "Zhu et al. 2020",
+      "kendall_tau": 0.108,
+      "spearman_rho": 0.129
+    },
+    {
+      "method": "DSNet_af",
+      "reference": "Zhu et al. 2020",
+      "kendall_tau": 0.113,
+      "spearman_rho": 0.138
+    },
+    {
+      "method": "RSGN",
+      "reference": "Zhao et al. 2021",
+      "kendall_tau": 0.083,
+      "spearman_rho": 0.09
+    },
+    {
+      "method": "SSPVS",
+      "reference": "Li et al. 2023",
+      "kendall_tau": 0.177,
+      "spearman_rho": 0.233
+    },
+    {
+      "method": "2025_LLMVS (DDPM)",
+      "reference": "Shang et al. AAAI-2025",
+      "kendall_tau": 0.179,
+      "spearman_rho": 0.238
+    }
+  ],
+  "multi_annotator_head_to_head_tvsum50": {
+    "num_videos": 50,
+    "steps": 3000,
+    "mine_f1_mean": 39.2533,
+    "mine_f1_std": 5.7153,
+    "base_f1_mean": 14.8533,
+    "base_f1_std": 6.5487,
+    "f1_gap": 24.4,
+    "f1_win_rate": 100.0,
+    "f1_ttest_p": 2.33e-26,
+    "f1_wilcoxon_p": 7.53e-10,
+    "mine_spearman": 0.8571,
+    "base_spearman": -0.004,
+    "mine_kendall": 0.7091,
+    "base_kendall": -0.0028,
+    "mine_w2_mean": 35.5912,
+    "base_w2_mean": 39.1925
+  },
+  "per_video_records": []
+}

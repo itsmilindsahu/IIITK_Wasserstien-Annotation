@@ -4,11 +4,23 @@ import numpy as np
 # using a linear model here since this is just the phase-1 prototype,
 # swap this out for the real thing in phase 2
 class NoisePredictor:
-    def __init__(self, N, hidden=64, lr=0.01):
+    def __init__(self, N, hidden=64, lr=0.01, rng=None):
+        """
+        rng: np.random.Generator used for weight initialization. Previously
+        this used the unseeded global np.random.randn, so two "identical"
+        configs (same target, same steps) would get different random
+        initial weights on every run -- making it impossible to tell
+        whether a result came from a better training target or just a
+        lucky weight draw. Pass a per-video-seeded Generator (and reuse
+        the SAME seed across configs being compared) so differences are
+        attributable to the training target/process, not weight-init luck.
+        """
+        if rng is None:
+            rng = np.random.default_rng()
         self.N = N
-        self.W1 = np.random.randn(N, hidden) * 0.1
+        self.W1 = rng.standard_normal((N, hidden)) * 0.1
         self.b1 = np.zeros(hidden)
-        self.W2 = np.random.randn(hidden, N) * 0.1
+        self.W2 = rng.standard_normal((hidden, N)) * 0.1
         self.b2 = np.zeros(N)
         self.lr = lr
 

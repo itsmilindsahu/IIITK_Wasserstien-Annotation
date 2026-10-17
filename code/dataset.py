@@ -1,5 +1,20 @@
 import numpy as np
 import os
+import hashlib
+
+
+def stable_seed(vid):
+    """
+    Deterministic per-video seed that is stable across process restarts.
+
+    Python's built-in hash() on strings is randomly salted per-process
+    (PYTHONHASHSEED) as a security feature, so `abs(hash(vid)) % M` gives a
+    different seed every run even though everything downstream is seeded
+    "correctly" within that run. Use a fixed-digest hash (md5) instead, so
+    the same video id always maps to the same seed, forever.
+    """
+    digest = hashlib.md5(str(vid).encode("utf-8")).hexdigest()
+    return int(digest, 16) % (2**31 - 1)
 
 def load_tvsum_data(tsv_path="ydata-tvsum50-anno.tsv"):
     """
