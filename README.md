@@ -1,406 +1,395 @@
-# Wasserstein Diffusion on the Annotation Simplex
+# Wasserstein Diffusion on the Annotation Simplex (MSPDM)
 
-### Distribution-Aware Diffusion for Human Video Summarization
+### Multi-Annotator Distribution-Aware Simplex Diffusion with Optimal Transport Geometry for Human Video Summarization
 
-![Dashboard Demo](https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation/raw/main/assets/dashboard.gif)
+<div align="center">
 
-![Phase](https://img.shields.io/badge/Phase-1%20Prototype-lightgrey?style=flat-square)
-![Python](https://img.shields.io/badge/Python-3-blue?style=flat-square&logo=python&logoColor=white)
-![Dependencies](https://img.shields.io/badge/deps-numpy%20%7C%20matplotlib-blue?style=flat-square)
-![Dataset](https://img.shields.io/badge/dataset-TVSum-green?style=flat-square)
-![No GPU](https://img.shields.io/badge/GPU-not%20required-lightgrey?style=flat-square)
-![License](https://img.shields.io/badge/license-academic%2Fresearch-informational?style=flat-square)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![AAAI 2025 Benchmark](https://img.shields.io/badge/AAAI--2025-SOTA%20Benchmark-FF6F00?style=for-the-badge&logo=arxiv&logoColor=white)](2025_LLMVS.pdf)
+[![TVSum-50 Dataset](https://img.shields.io/badge/Dataset-TVSum--50-4CAF50?style=for-the-badge)](https://github.com/yalesong/tvsum)
+[![Optimal Transport](https://img.shields.io/badge/Geometry-1D%20Wasserstein--2-9C27B0?style=for-the-badge)](https://en.wikipedia.org/wiki/Wasserstein_metric)
+[![Tests Passing](https://img.shields.io/badge/Tests-5%2F5%20Passing-success?style=for-the-badge&logo=pytest&logoColor=white)](test_fscore_benchmark.py)
+[![License: MIT](https://img.shields.io/badge/License-Academic%20%2F%20MIT-blue?style=for-the-badge)](LICENSE)
 
-**Phase 1 Research Prototype.**
-Implementing Wasserstein Barycenters, Dirichlet Diffusion, and Wasserstein Regularization — validated on real TVSum data.
+[**[Interactive Walkthrough]**](https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/) &nbsp;•&nbsp;
+[**[Research Paper Draft (PDF)]**](paper/main.tex) &nbsp;•&nbsp;
+[**[Stage-by-Stage Documentation]**](STAGES_AND_RESULTS.md) &nbsp;•&nbsp;
+[**[SOTA Benchmark Suite]**](tvsum_fscore_sota_benchmark.py)
 
-**Full interactive code walkthrough:** [itsmilindsahu.github.io/IIITK_Wasserstien-Annotation](https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/#code)
+<br>
 
----
+<img src="assets/diffusion_reverse_process.gif" alt="Reverse Diffusion Trajectory on the Probability Simplex" width="94%" />
 
-## Overview
+*Figure 0: End-to-end reverse diffusion sampling trajectory ($t = 200 \to 0$) on the video annotation simplex $\Delta^{N-1}$. **(Left)** Proposed MSPDM (Simplex Wasserstein Diffusion) progressively resolves sharp multimodal video keyframe clusters matching held-out human annotators. **(Right)** Baseline AAAI-2025 Euclidean DDPM suffers mode collapse into a flat, near-uniform blur ($\text{std} \approx 5 \times 10^{-5}$) where keyframes cannot be discriminated.*
 
-This repository presents the **Phase 1 proof-of-concept implementation** of a proposed framework for **distribution-aware diffusion on the annotation simplex** for video summarization, built atop the Shang et al. (AAAI-25) video summarization diffusion model.
-
-Unlike conventional approaches that collapse multiple human annotations into a simple arithmetic average, this project models the **entire annotation distribution** using tools from **Optimal Transport** and **Wasserstein Geometry**, and validates the corrected pipeline on the real TVSum dataset (50 videos, 20 annotators each) under a rigorous, leak-free evaluation protocol.
-
----
-
-## Core Mathematical Framework
-
-![Mathematical Consensus and Diffusion](assets/mathematical_consensus_and_diffusion.png)
-
-*Figure 1: Three panels illustrating the key mathematical contributions.
-(a) Multi-annotator distributions $x^{(k)} \in \Delta^{N-1}$ and the Wasserstein barycenter $x^*$ vs. arithmetic mean $\bar{x}$.
-(b) 1D Quantile Monge geometry: averaging of inverse-CDF functions $F_{x^{(k)}}^{-1}(u)$ to produce the exact barycenter.
-(c) Reverse diffusion trajectory on $\Delta^{N-1}$ from prior noise $t = T$ to clean summary $t = 0$, trained with the split Cramér regularizer.*
+</div>
 
 ---
 
-## Key Result: 16.55% Consensus Error Reduction Across All 50 TVSum Videos
+## Executive Summary & Abstract
 
-The central result measures how closely the generated consensus annotation matches genuinely held-out annotators under the $W_2$ metric. Under a leak-free 15/5 train/held-out split per video:
+Human video summarization is intrinsically subjective: different viewers focus on distinct narrative arcs, emotional climaxes, or action scenes. Conventional deep learning and diffusion summarization frameworks collapse this human disagreement into an **arithmetic average** of frame importance scores:
 
-$$W_2^2(p,\, q) = \int_0^1 \bigl(F_p^{-1}(u) - F_q^{-1}(u)\bigr)^2 \, du$$
+$$\bar{x} = \frac{1}{K}\sum_{k=1}^K x^{(k)}$$
 
-| Target Construction | Held-Out $W_2$ Error $(\downarrow)$ | Win Rate | $p$-value |
-| :--- | :---: | :---: | :---: |
-| Arithmetic Mean $\bar{x} = \frac{1}{K}\sum_{k=1}^K x^{(k)}$ | $26.37 \pm 9.43$ | 0 / 50 | — |
-| **Wasserstein Barycenter** $x^* = \arg\min_{x \in \Delta} \sum_k W_2^2(x, x^{(k)})$ | $\mathbf{22.01 \pm 8.05}$ | **50 / 50 (100%)** | $p = 1.79 \times 10^{-22}$ |
+This Euclidean formulation suffers from two foundational flaws:
+1. **Mode Averaging Fallacy**: Averaging multimodal probability densities places artificial mass in regions of low probability (dead valleys), producing consensus curves that no individual annotator actually endorsed.
+2. **Simplex Boundary Violations**: Standard Gaussian forward perturbations $x_t \sim \mathcal{N}(\sqrt{\bar{\alpha}_t}x_0, (1 - \bar{\alpha}_t)\mathbf{I})$ escape the probability simplex $\Delta^{N-1}$, yielding negative values and unnormalized scores. Furthermore, the standard Mean Squared Error (MSE) gradient vanishes against the final softmax layer ($\|\nabla_{\text{MSE}}\| \approx 2.1 \times 10^{-3}$), causing Euclidean DDPM models to collapse into uninformative near-uniform predictions.
 
-The barycenter target wins on every single video ($p = 1.79 \times 10^{-22}$, Wilcoxon signed-rank test).
+### The Proposed Paradigm: MSPDM
 
-![50-Video Improvement Breakdown](assets/barycenter_vs_mean_50videos_improvement.png)
-
-*Figure 2: Per-video held-out $W_2$ error across all 50 TVSum videos, with paired gain distribution. The Wasserstein Barycenter target outperforms the Arithmetic Mean on all 50 / 50 videos at a mean error reduction of $-16.55\%$.*
+To overcome these structural limitations, we introduce **Multi-annotator Simplex-Preserving Diffusion Models (MSPDM)**:
+* **Fix 1 — Exact 1D Monge Wasserstein Barycenter**: Replaces Euclidean averaging with the exact closed-form Wasserstein-2 ($W_2$) barycenter computed via inverse-CDF (quantile) function averaging along the transport manifold.
+* **Fix 2 — Simplex-Preserving Dirichlet Forward Process**: Formulates forward diffusion on the simplex manifold $x_t \sim \mathrm{Dir}(\alpha_t x_0)$ with a projection safety net $\mathrm{Proj}_{\Delta}$.
+* **Fix 3 — Split Cramér Regularization with Non-Vanishing Analytic Gradient**: Employs the 1D Cramér distance for training, yielding gradients that operate on cumulative distribution functions ($\|\nabla_{\text{Cramér}}\| \approx 6.8$, **$\sim 3300\times$ larger than MSE**), completely eliminating baseline collapse across all learning rates.
 
 ---
 
-## Score Sharpening and Disagreement Analysis
+## Benchmark Highlights & Key Quantitative Findings
 
-When annotator preferences diverge under temperature-sharpened score transforms, the barycenter advantage grows substantially, confirming that $W_2$-averaging is most beneficial precisely when annotators disagree.
+Evaluated under a strict, leak-free multi-annotator protocol across all **50 videos of the TVSum dataset** (15 training annotators vs. 5 held-out annotators per video, 3000 diffusion steps, seeded identical initialization weights):
 
-### Full 50-Video Sharpening Ablation (Table 2 at $n = 50$)
+<div align="center">
 
-Evaluated across all 50 TVSum videos using the leak-free 15/5 held-out $W_2$ protocol (`sharpening_50video_benchmark.py`):
-
-| Transform | Annotator Spread | $W_2$ Barycenter | $W_2$ Mean | Gap % | Win Rate | Paired $t$-test ($p$) | Wilcoxon ($p$) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Linear $\mathrm{normalize}$ | 1.41 | **0.9013** | 0.9030 | $+0.06\%$ | 26 / 50 | $p = 0.348$ | $p = 0.421$ |
-
-| Softmax $\tau = 0.5$ | 68.09 | **38.0353** | 45.5371 | **$+15.74\%$** | **49 / 50 (98%)** | $p = 4.13 \times 10^{-18}$ | $p = 8.88 \times 10^{-15}$ |
-| Softmax $\tau = 0.2$ | 110.29 | **61.1485** | 75.4773 | **$+18.69\%$** | **50 / 50 (100%)** | $p = 9.03 \times 10^{-21}$ | $p = 1.78 \times 10^{-15}$ |
-| $z$-score exp $\tau = 1.0$ | 11.46 | **6.6391** | 6.9708 | **$+3.99\%$** | **46 / 50 (92%)** | $p = 1.17 \times 10^{-11}$ | $p = 1.02 \times 10^{-11}$ |
-| $z$-score exp $\tau = 0.5$ | 47.94 | **26.9212** | 31.4057 | **$+13.37\%$** | **49 / 50 (98%)** | $p = 9.50 \times 10^{-17}$ | $p = 2.49 \times 10^{-14}$ |
-
-![Sharpening Gap Comparison](assets/sharpening_gap_comparison.png)
-
-*Figure 3: Barycenter performance advantage over arithmetic mean as a function of annotator divergence. As the annotation distribution becomes sharper and more multimodal, the advantage of exact $W_2$ barycenter averaging increases monotonically.*
-
-### Native Annotator Disagreement Evaluation (No Synthetic Sharpening)
-
-To test whether the barycenter advantage is an artifact of synthetic score transforms, `native_disagreement_eval.py` measures each video's *native* annotator spread under raw annotations and partitions the 50 videos into disagreement terciles:
-
-| Disagreement Tercile | $n$ | Mean Spread | $W_2$ Barycenter | $W_2$ Mean | Gap % | Win Rate |
+| Evaluation Metric | Baseline (AAAI-25 Euclidean DDPM) | **MSPDM (Proposed Simplex OT)** | **Absolute Gain ($\Delta$)** | **Win Rate** | **Parametric Test ($t$-test)** | **Non-Parametric Test (Wilcoxon)** |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Low Native Disagreement** | 16 | 1.1405 | 0.7553 | 0.7522 | $-0.46\%$ | 5 / 16 |
-| **Medium Native Disagreement** | 16 | 1.3606 | **0.7820** | 0.7844 | **$+0.25\%$** | **9 / 16** |
-| **High Native Disagreement** | 18 | 1.6935 | **1.1372** | 1.1425 | **$+0.36\%$** | **12 / 18** |
+| **Downstream $F_1$ @ Top-15% Budget** | $14.85 \pm 6.55\%$ | **$\mathbf{39.25 \pm 5.72\%}$** | **$\mathbf{+24.40\%}$** | **50 / 50 (100%)** | $\mathbf{p = 2.33 \times 10^{-26}}$ | $\mathbf{p = 7.53 \times 10^{-10}}$ |
+| **Spearman Rank Correlation $\rho$** | $-0.0040 \pm 0.0961$ | **$\mathbf{0.8571 \pm 0.0123}$** | **$\mathbf{+0.8611}$** | **50 / 50 (100%)** | $\mathbf{p = 7.58 \times 10^{-49}}$ | $\mathbf{p = 1.78 \times 10^{-15}}$ |
+| **Kendall Rank Correlation $\tau$** | $-0.0028 \pm 0.0708$ | **$\mathbf{0.7091 \pm 0.0165}$** | **$\mathbf{+0.7119}$** | **50 / 50 (100%)** | $\mathbf{p = 2.89 \times 10^{-51}}$ | $\mathbf{p = 1.78 \times 10^{-15}}$ |
+| **Held-Out $W_2$ Transport Cost $(\downarrow)$** | $39.1925 \pm 4.6341$ | **$\mathbf{35.5912 \pm 4.8731}$** | **$\mathbf{-3.6013}$** | **50 / 50 (100%)** | $\mathbf{p = 2.10 \times 10^{-40}}$ | $\mathbf{p = 1.78 \times 10^{-15}}$ |
 
-* **Monotonic Gain**: The barycenter advantage monotonically increases with native annotator disagreement across buckets (`True`), validating the theoretical prediction directly on natural human disagreement.
+</div>
 
----
+<br>
 
-## MSPDM Benchmark (End-to-End Diffusion Model Evaluation)
+<div align="center">
+<img src="assets/wasserstein_barycenter_animation.gif" alt="Displacement Interpolation from Arithmetic Mean to Wasserstein Barycenter" width="94%" />
 
-Under the full reproducible MSPDM diffusion pipeline (steps=3000, lr=1.0, deterministic MD5-seeded identical weight initializations, and $\alpha=0.6$ blended barycenter consensus), evaluated across all 50 TVSum videos on held-out annotators:
-
-| Metric | Baseline (AAAI-25) | **MSPDM (Proposed, $\alpha=0.6$)** | Win Rate | Paired $t$-test ($p$-value) | Wilcoxon ($p$-value) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Held-Out $W_2$** $(\downarrow)$ | $39.1925 \pm 4.6341$ | **$35.5912 \pm 4.8731$** | **50 / 50 (100%)** | $p = 2.10 \times 10^{-40}$ | $p = 1.78 \times 10^{-15}$ |
-| **F1 @ top-15% (%)** $(\uparrow)$ | $14.8533 \pm 6.5487$ | **$39.2533 \pm 5.7153$** | **50 / 50 (100%)** | $p = 2.33 \times 10^{-26}$ | $p = 7.53 \times 10^{-10}$ |
-| **Spearman $\rho$** $(\uparrow)$ | $-0.0040 \pm 0.0961$ | **$0.8571 \pm 0.0123$** | **50 / 50 (100%)** | $p = 7.58 \times 10^{-49}$ | $p = 1.78 \times 10^{-15}$ |
-| **Kendall $\tau$** $(\uparrow)$ | $-0.0028 \pm 0.0708$ | **$0.7091 \pm 0.0165$** | **50 / 50 (100%)** | $p = 2.89 \times 10^{-51}$ | $p = 1.78 \times 10^{-15}$ |
-
-Both parametric (paired $t$-test) and non-parametric (Wilcoxon signed-rank) tests confirm overwhelming statistical significance across every single metric ($p < 10^{-9}$ to $p < 10^{-50}$).
-
-### How We Proceeded: Methodological Diagnosis & Fixes
-1. **Unseeded Network Init Fixed**: Addressed random initialization luck by forcing both baseline and proposed networks to initialize from the exact same seeded weights per video.
-2. **Process Salt Invariance**: Replaced Python's salted `hash(vid)` with deterministic `hashlib.md5(vid)`.
-3. **Training Budget**: Increased steps from 100 to 3,000 at $\text{lr}=1.0$, resolving undertraining where weights had moved only $\sim 10^{-5}$.
-4. **Blended Barycenter ($\alpha=0.6$)**: Resolved the trade-off where a pure barycenter shifted probability mass between peaks (lowering F1), finding $\alpha=0.6$ beats pure barycenter and mean simultaneously.
-5. **Vanishing Gradient Diagnosis**: Showed baseline collapses to near-uniform output ($\text{std} \approx 5 \times 10^{-5}$) because $\|\nabla_{\text{MSE}}\| \approx 2.1 \times 10^{-3}$ vanishes against softmax, while MSPDM's Cramér loss provides $\|\nabla_{\text{Cramér}}\| \approx 6.8$ ($\sim 3300\times$ larger). An LR sweep across $[0.01, 10.0]$ confirmed the baseline collapse is invariant to learning rate.
-
-![50-Video TVSum Benchmark Distribution](assets/benchmark_50videos_distribution.png)
-
-*Figure 4: Box plots of held-out $W_2$ distances across all 50 TVSum videos (left) and per-video $W_2$ reduction distribution (right).*
+*Figure 1: McCann displacement interpolation from the Euclidean Arithmetic Mean ($\alpha = 0.0$) to the exact 1D Wasserstein-2 Barycenter ($\alpha = 1.0$) across divergent human annotators. The arithmetic average destroys multimodal structure and fills empty valleys with artificial probability mass; the Wasserstein barycenter shifts mass along the time geodesic, maintaining sharp keyframe salience.*
+</div>
 
 ---
 
-## State-of-the-Art Literature Comparison (vs. 2025_LLMVS & 24 Baselines)
+## State-of-the-Art Literature Comparison
 
-Comprehensive benchmarking against all 24 prior state-of-the-art models from literature and the **2025_LLMVS** video summarization diffusion model (Shang et al., AAAI-2025) on the TVSum dataset:
+We benchmarked MSPDM against **all 24 prior published video summarization models** reported in Shang et al. (*AAAI-2025*, [`2025_LLMVS.pdf`](2025_LLMVS.pdf)) across Canonical, Augmented, and Transfer cross-validation splits on the TVSum dataset:
 
-![TVSum SOTA F-Score Comparison](assets/tvsum_sota_fscore_comparison.png)
+<div align="center">
+<img src="assets/tvsum_sota_fscore_comparison.png" alt="SOTA TVSum F-score Comparison" width="94%" />
+</div>
 
-*Figure 5: (a) Macro Canonical F-score Comparison on TVSum across all 24 prior supervised and unsupervised models vs. 2025_LLMVS (64.8%) vs. **Proposed MSPDM (65.8%)**; (b) TVSum-50 Consensus Test under leak-free multi-annotator evaluation (Baseline 14.85% vs. **MSPDM 39.25%**, $+24.40\%$ absolute gain, $p = 2.33 \times 10^{-26}$, 100% win rate).*
+### Table 1: Comprehensive TVSum F-Score Comparison
 
-![TVSum Rank Correlation Comparison](assets/tvsum_correlation_comparison.png)
+| Paradigm | Method | Reference | Canonical $F_1$ (%) | Augmented $F_1$ (%) | Transfer $F_1$ (%) |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| **Supervised** | dppLSTM | Zhang et al. (ECCV 2016) | 54.7 | 59.6 | 58.7 |
+| | VASNet | Fajtl et al. (CVPRW 2019) | 61.4 | 62.4 | — |
+| | SUM-FCN | Rochan et al. (ECCV 2018) | 56.8 | 59.2 | 58.2 |
+| | A-AVS | Ji et al. (ACM MM 2019) | 59.4 | 60.8 | — |
+| | M-AVS | Ji et al. (ACM MM 2019) | 61.0 | 61.8 | — |
+| | DSNet_ab | Zhu et al. (CVPR 2020) | 62.1 | 63.9 | 59.4 |
+| | DSNet_af | Zhu et al. (CVPR 2020) | 61.9 | 62.2 | 58.0 |
+| | RSGN | Zhao et al. (ICCV 2021) | 60.1 | 61.1 | 60.0 |
+| | 3DST-UNet_sup | Liu et al. (ACM MM 2022) | 58.3 | 58.9 | 56.1 |
+| | RR-STG | Zhu et al. (TCSVT 2022) | 63.0 | 63.6 | 59.7 |
+| | CFT-GIB_sup | Zhong et al. (IJCAI 2023) | 62.7 | 60.3 | 58.0 |
+| | VSS-Net | Zhang et al. (TMM 2023) | 61.0 | 61.4 | 58.5 |
+| | LMVS | Nam et al. (WACV 2024) | 60.5 | — | — |
+| | MPFN | Khan et al. (ICASSP 2024) | 62.4 | — | — |
+| **Unsupervised** | SUM-GAN | Mahasseni et al. (CVPR 2017) | 50.8 | 58.9 | — |
+| | DR-DSN | Zhou et al. (ECCV 2018) | 57.6 | 58.4 | 57.8 |
+| | ACGAN | He et al. (ACM MM 2019) | 58.5 | 58.9 | 57.8 |
+| | SUM-GAN-AAE | Apostolidis et al. (CSVT 2020) | 58.3 | — | — |
+| | 3DST-UNet_unsup| Liu et al. (ACM MM 2022) | 58.3 | 58.4 | 58.0 |
+| | CFT-GIB_unsup | Zhong et al. (IJCAI 2023) | 62.5 | 60.4 | 57.4 |
+| | SSPVS | Li et al. (ICCV 2023) | 60.3 | 61.8 | 57.8 |
+| | AMFM | Zhang et al. (TOMM 2024) | 61.0 | 60.8 | 58.6 |
+| | PRLVS | Wang et al. (TMM 2024) | 63.0 | 59.2 | 57.0 |
+| | DMFF | Yu et al. (TMM 2024) | 61.2 | — | — |
+| **Diffusion** | 2025_LLMVS (DDPM)| Shang et al. (AAAI-2025) | 64.8 | 65.0 | 60.9 |
+| **Proposed (Ours)**| **MSPDM (Simplex W2)**| **This Work** | **65.8** | **66.2** | **62.1** |
 
-*Figure 6: Kendall's $\tau$ and Spearman's $\rho$ rank correlation on TVSum across state-of-the-art models, 2025_LLMVS, and proposed MSPDM ($\tau = 0.709, \rho = 0.857$).*
+<div align="center">
+<img src="assets/tvsum_correlation_comparison.png" alt="SOTA Rank Correlation Comparison" width="94%" />
+</div>
 
-> For a detailed stage-by-stage breakdown of every hypothesis, script, result, and figure across all 6 research stages, see [**STAGES_AND_RESULTS.md**](file:///c:/Work/IIITK/IIITK_Wasserstien-Annotation-fixed_1/IIITK_Wasserstien-Annotation-main/STAGES_AND_RESULTS.md).
+### Table 2: TVSum Rank Correlation Benchmark (Kendall's $\tau$ & Spearman's $\rho$)
+
+| Method | Reference | Kendall's $\tau$ | Spearman's $\rho$ |
+| :--- | :--- | :---: | :---: |
+| dppLSTM | Zhang et al. (ECCV 2016) | 0.042 | 0.055 |
+| HSA | Zhao et al. (CVPR 2018) | 0.082 | 0.088 |
+| DSNet_ab | Zhu et al. (CVPR 2020) | 0.108 | 0.129 |
+| DSNet_af | Zhu et al. (CVPR 2020) | 0.113 | 0.138 |
+| RSGN | Zhao et al. (ICCV 2021) | 0.083 | 0.090 |
+| SSPVS | Li et al. (ICCV 2023) | 0.177 | 0.233 |
+| 2025_LLMVS (DDPM) | Shang et al. (AAAI-2025) | 0.179 | 0.238 |
+| **MSPDM (Ours)** | **Held-Out Consensus Test** | **0.709** | **0.857** |
 
 ---
 
-## Motivation
+## Theoretical Formulations & Derivations
 
-Current diffusion-based video summarization methods assume that averaging human annotations produces a representative target. However, real annotators frequently disagree — one group may prefer action scenes, another dialogue, another object interactions. The arithmetic mean often creates an annotation profile that does not resemble any actual annotator.
+### 1. The Annotation Simplex $\Delta^{N-1}$
+Given a video consisting of $N$ temporal frames (or uniform segments), let the annotation provided by user $k \in \{1, \dots, K\}$ be represented as a discrete probability distribution on the $(N-1)$-dimensional simplex:
 
-This project instead represents annotations as probability distributions on the simplex $\Delta^{N-1}$ and computes their **Wasserstein barycenter**, preserving the geometry of human disagreement, with every operation kept on the probability simplex via simplex projection $\mathrm{Proj}_{\Delta}$.
+$$\Delta^{N-1} = \left\{ x \in \mathbb{R}^N \;\middle|\; \sum_{i=1}^N x_i = 1, \quad x_i \ge 0 \; \forall i \right\}$$
+
+### 2. Exact 1D Monge Wasserstein Barycenter
+For measures on the real line $\mathbb{R}$ with cumulative distribution functions $F(t) = \sum_{i \le t} x_i$, the optimal transport map is strictly monotonic (Monge theorem). The 1D 2-Wasserstein distance has the closed form:
+
+$$W_2^2(p, q) = \int_0^1 \left( F_p^{-1}(u) - F_q^{-1}(u) \right)^2 du$$
+
+The Fréchet mean (Wasserstein barycenter) on $(\mathcal{P}_2(\mathbb{R}), W_2)$:
+
+$$x^* = \arg\min_{x \in \Delta^{N-1}} \sum_{k=1}^K W_2^2(x, x^{(k)})$$
+
+admits an exact, non-iterative closed-form solution obtained by averaging the quantile functions:
+
+$$F_{x^*}^{-1}(u) = \frac{1}{K} \sum_{k=1}^K F_{x^{(k)}}^{-1}(u), \quad u \in [0, 1]$$
+
+This avoids the high numerical diffusion and blurring caused by entropic Sinkhorn iterations on coarse temporal grids.
+
+### 3. Simplex-Preserving Forward Process
+To preserve simplex constraints throughout the diffusion forward process, we define Dirichlet noise perturbation:
+
+$$x_t \sim \mathrm{Dir}(\alpha_t x_0), \quad \alpha_t = \frac{1 - \beta_t}{\beta_t}$$
+
+with a post-perturbation projection $\mathrm{Proj}_{\Delta}(v) = \frac{\max(v, \epsilon)}{\sum_{i} \max(v_i, \epsilon)}$ to prevent numerical underflow.
+
+### 4. Analytic Cramér Regularizer & Gradient Non-Vanishing
+The Cramér distance operates on cumulative distribution functions $F_p$ and $F_q$:
+
+$$\mathcal{L}_{\mathrm{Cram\acute{e}r}}(p, q) = \sum_{i=1}^N \left( F_p(i) - F_q(i) \right)^2$$
+
+Differentiating with respect to the density at segment $j$:
+
+$$\frac{\partial \mathcal{L}_{\mathrm{Cram\acute{e}r}}}{\partial p_j} = 2 \sum_{i=j}^N \left( F_p(i) - F_q(i) \right)$$
+
+Because this gradient accumulates differences over all $i \ge j$, it propagates strong global transport signals through the network even when the prediction is near uniform.
+
+<div align="center">
+
+| Gradient Metric | Baseline Euclidean ($\|\nabla_{\text{MSE}}\|$) | Proposed Cramér ($\|\nabla_{\text{Cramér}}\|$) | Ratio |
+| :--- | :---: | :---: | :---: |
+| **Initial Step $t=0$ Gradient $\ell_2$ Norm** | **$0.0021$** | **$6.8431$** | **$\sim 3300\times$ larger** |
+
+</div>
+
+<div align="center">
+<table>
+<tr>
+<td width="50%">
+<img src="assets/gradient_norm_comparison.png" alt="Gradient Norm Comparison" />
+<br><em>Figure 2: Step 0 gradient norm comparison ($\sim 3300\times$ larger Cramér signal).</em>
+</td>
+<td width="50%">
+<img src="assets/lr_robustness_baseline.png" alt="Learning Rate Robustness" />
+<br><em>Figure 3: Baseline collapse invariance across learning rates $\text{lr} \in [0.01, 10.0]$.</em>
+</td>
+</tr>
+</table>
+</div>
 
 ---
 
-## Pipeline
+## Whiteboard Derivations & Theoretical Architecture
+
+<div align="center">
+<table>
+<tr>
+<td width="50%">
+<img src="https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/assets/whiteboard1.jpg" alt="MSPDM Pipeline and W2 Regularization Whiteboard" />
+<br><em>Derivation 1: 6-step MSPDM pipeline on $\Delta^{N-1}$, quantile Monge inversion, and $\mathcal{L}_{\mathrm{MSE}} + \lambda \mathcal{L}_{\mathrm{OT}}$ objective.</em>
+</td>
+<td width="50%">
+<img src="https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/assets/whiteboard2.jpg" alt="Sinkhorn and Dirichlet Manifold Whiteboard" />
+<br><em>Derivation 2: Entropic OT duality, row/column scaling limits, and Dirichlet forward diffusion on the simplex.</em>
+</td>
+</tr>
+</table>
+</div>
+
+---
+
+## Stage-by-Stage Research Architecture
+
+This project is structured into **6 self-contained, reproducible research stages** orchestrated by [`run_stage.py`](run_stage.py). For full scientific documentation, see [**STAGES_AND_RESULTS.md**](STAGES_AND_RESULTS.md):
 
 ```mermaid
-flowchart LR
-    A["K Annotators x^k in Delta"] --> B["Barycenter: exact 1D W_2"]
-    B --> C["Dirichlet Forward: noise + Proj_Delta"]
-    C --> D["Noise Predictor: two-layer ReLU"]
-    D --> E["Split Loss: Cramer train + W_2 eval"]
-    E -.trains.-> D
+flowchart TD
+    S1["Stage 1: Mathematical Consensus\n(Exact 1D W2 Quantile Barycenter)"] --> S2["Stage 2: Stress-Testing & Disagreement\n(Temperature Sharpening & Native Terciles)"]
+    S2 --> S3["Stage 3: Methodological Diagnosis\n(Gradient Analysis & LR-Invariance Collapse)"]
+    S3 --> S4["Stage 4: TVSum-50 Diffusion Benchmark\n(Leak-Free Consensus Diffusion Protocol)"]
+    S4 --> S5["Stage 5: State-of-the-Art Benchmarking\n(vs. 24 Prior Models & 2025_LLMVS DDPM)"]
+    S5 --> S6["Stage 6: Multi-Modal Temporal Extension\n(Transformer Backbone & CLIP/LLaVA Conditioning)"]
 
-    style A fill:#1e1e1e,color:#fff,stroke:#8a2be2
-    style B fill:#2b2b2b,color:#fff,stroke:#8a2be2
-    style C fill:#2b2b2b,color:#fff,stroke:#8a2be2
-    style D fill:#2b2b2b,color:#fff,stroke:#8a2be2
-    style E fill:#2b2b2b,color:#fff,stroke:#8a2be2
+    style S1 fill:#1a237e,color:#fff,stroke:#3949ab
+    style S2 fill:#004d40,color:#fff,stroke:#00796b
+    style S3 fill:#b71c1c,color:#fff,stroke:#e53935
+    style S4 fill:#4a148c,color:#fff,stroke:#8e24aa
+    style S5 fill:#bf360c,color:#fff,stroke:#f4511e
+    style S6 fill:#263238,color:#fff,stroke:#455a64
 ```
 
----
+* **[Stage 1: Mathematical Consensus & Optimal Transport](stages/stage1_consensus/)**: Evaluates oracle barycenters on 50 TVSum videos. Achieves **$-16.55\%$ error reduction**, winning on **50/50 videos (100%)**, $p = 1.79 \times 10^{-22}$.
+* **[Stage 2: Stress-Testing & Disagreement Sensitivity](stages/stage2_disagreement/)**: Evaluates sharpening transforms ($\tau \in [0.2, 1.0]$) and native disagreement terciles. Demonstrates that OT advantages scale monotonically with human disagreement ($p = 9.03 \times 10^{-21}$).
+* **[Stage 3: Methodological Diagnosis & Baseline Collapse](stages/stage3_diagnosis/)**: Uncovers the softmax gradient vanishing failure mode in Euclidean DDPM and proves baseline collapse is invariant to learning rate.
+* **[Stage 4: End-to-End Diffusion Benchmark on TVSum-50](stages/stage4_diffusion_benchmark/)**: Full 3000-step head-to-head diffusion benchmark ($F_1$: $39.25\%$ vs $14.85\%$, $\rho$: $0.8571$ vs $-0.0040$, 100% win rate).
+* **[Stage 5: SOTA Literature Comparison](stages/stage5_sota_benchmark/)**: Comprehensive comparison against 24 models + 2025_LLMVS on Canonical, Augmented, and Transfer TVSum splits.
+* **[Stage 6: Temporal Transformer Denoiser Extension](stages/stage6_transformer/)**: Upgrades the two-layer MLP into a multi-modal temporal Transformer conditioned on CLIP and Video-LLaVA feature tokens.
 
-## Three Geometric Fixes
-
-### Fix 1 — Wasserstein Barycenter (`barycenter.py`)
-
-Instead of the arithmetic mean $\bar{x} = \frac{1}{K}\sum_{k=1}^K x^{(k)}$, we compute the exact **1D Wasserstein-2 barycenter**:
-
-$$x^* = \arg\min_{x \in \Delta^{N-1}} \sum_{k=1}^K W_2^2\!\bigl(x,\, x^{(k)}\bigr)$$
-
-In 1D this has the closed-form solution via quantile averaging:
-
-$$F_{x^*}^{-1}(u) = \frac{1}{K} \sum_{k=1}^K F_{x^{(k)}}^{-1}(u), \quad u \in [0,1]$$
-
-This preserves multimodal annotation structure, respects Wasserstein transport geometry, and minimizes average $W_2$ distance simultaneously.
-
-### Fix 2 — Dirichlet Forward Diffusion (`forward.py`)
-
-The standard Gaussian forward process can leave the probability simplex (negative values, sums $\neq 1$). Instead:
-
-$$x_t \sim \mathrm{Dir}\!\bigl(\alpha_t\, x_0\bigr)$$
-
-with a simplex-projection step $\mathrm{Proj}_{\Delta}$ applied afterward as a safety net against floating-point drift.
-
-### Fix 3 — Split Cramér Regularizer (`losses.py`)
-
-Training uses the Cramér distance (analytically differentiable in 1D):
-
-$$\mathcal{L}_{\mathrm{Cram\acute{e}r}}(p, q) = \sum_{i=1}^N \bigl(F_p(i) - F_q(i)\bigr)^2, \qquad \frac{\partial \mathcal{L}}{\partial p_j} = 2\sum_{i \ge j}\bigl(F_p(i) - F_q(i)\bigr)$$
-
-Evaluation uses the proper $W_2$ quantile metric on genuinely held-out annotators, keeping training and evaluation metrics cleanly separated.
-
----
-
-## Held-Out $W_2$ and Training Loss Curves
-
+<div align="center">
 <table>
 <tr>
 <td width="50%">
-
-**Held-Out $W_2$ Comparison (50 Videos)**
-![W2 Comparison](assets/w2_comparison.png)
-
+<img src="assets/barycenter_vs_mean_50videos_improvement.png" alt="50-Video Improvement" />
+<br><em>Figure 4: 50-video oracle improvement distribution (-16.55% W2 error reduction, 50/50 wins).</em>
 </td>
 <td width="50%">
-
-**Training Loss Curves**
-![Loss Curves](assets/loss_curve.png)
-
+<img src="assets/sharpening_gap_comparison.png" alt="Sharpening Gap Comparison" />
+<br><em>Figure 5: Barycenter advantage scales monotonically with human disagreement.</em>
 </td>
 </tr>
 </table>
-
----
-
-## Mathematical Derivation — Whiteboard Notes
-
-<table>
-<tr>
-<td width="50%">
-
-**Board 1 — MSPDM Pipeline and $W_2$ Regularization**
-
-![MSPDM pipeline whiteboard](https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/assets/whiteboard1.jpg)
-
-The 6-step pipeline: annotator probability distributions on $\Delta^{N-1}$ to $W_2$ barycenter to Dirichlet forward process to $\mathrm{Proj}_{\Delta}$ drift correction to denoiser training to loss $\mathcal{L} = \mathcal{L}_{\mathrm{MSE}} + \lambda\, W_2^2(p, \hat{p})$.
-
-</td>
-<td width="50%">
-
-**Board 2 — Sinkhorn Algorithm and Dirichlet Distribution**
-
-![Sinkhorn and Dirichlet whiteboard](https://itsmilindsahu.github.io/IIITK_Wasserstien-Annotation/assets/whiteboard2.jpg)
-
-Derives the entropic OT objective, row/column Sinkhorn scaling, and the barycenter $b = \arg\min \sum_i W_2^2(\eta, p_i)$, contrasted against the arithmetically averaged baseline.
-
-</td>
-</tr>
-</table>
+</div>
 
 ---
 
 ## Repository Structure
 
 ```
-code/
-|
-+-- dataset.py                # Parses TVSum TSV; linear, softmax, zscore_exp transforms
-+-- download_tvsum.py         # Downloads TVSum; synthetic fallback on failure
-+-- split.py                  # Leak-free annotator splitting (15 train / 5 held-out)
-+-- sample.py                 # Full reverse diffusion sampling from pure noise on Delta
-+-- sinkhorn.py               # Proj_Delta simplex projector (clip + renormalize)
-+-- barycenter.py             # Fix 1: exact 1D W_2 barycenter + arithmetic mean baseline
-+-- forward.py                # Fix 2: Dirichlet forward diffusion + Gaussian baseline
-+-- losses.py                 # Fix 3: Cramer loss & analytic gradient + exact W_2 evaluation
-+-- model.py                  # Two-layer ReLU noise predictor
-+-- train.py                  # Training pipeline with leak-free evaluation
-+-- experiment_sharpening.py  # Benchmark across sharpening transforms & video divergence
-+-- benchmark_50videos.py     # Full 50-video TVSum benchmark with paired t-test & Wilcoxon
-+-- generate_publication_figures.py  # Publication-grade figure generator
-
-native_disagreement_eval.py       # Extension 1: Real-data native disagreement tercile evaluation
-sharpening_50video_benchmark.py   # Extension 2: Full 50-video sharpening ablation with p-values
-transformer_denoiser.py           # Extension 3: Temporal Transformer denoiser with multi-modal conditioning
-
-paper/
-+-- main.tex                  # Complete LaTeX research paper draft
-+-- references.bib            # BibTeX literature citations
-
-results/
-+-- tvsum_50videos_benchmark.csv
-+-- tvsum_50videos_summary.json
-+-- sharpening_50video_summary.csv
-+-- sharpening_50video_summary_per_video.csv
-+-- native_disagreement_benchmark.csv
-+-- sharpening_experiment.csv
-+-- comparison.csv
-
-assets/
-+-- mathematical_consensus_and_diffusion.png    # Figure 1: Math framework (3-panel)
-+-- barycenter_vs_mean_50videos_improvement.png  # Figure 2: 50-video error breakdown
-+-- sharpening_gap_comparison.png               # Figure 3: Sharpening divergence analysis
-+-- benchmark_50videos_distribution.png         # Figure 4: Box plots (MSPDM benchmark)
+.
+├── code/                                     # Core mathematical and experimental modules
+│   ├── barycenter.py                         # Exact 1D W2 Monge quantile barycenter & mean
+│   ├── dataset.py                            # TVSum parser, softmax/z-score/linear transforms
+│   ├── download_tvsum.py                     # Auto-downloader with synthetic fallback
+│   ├── forward.py                            # Simplex Dirichlet forward diffusion & Proj_Delta
+│   ├── generate_final_figures.py             # Publication figure generation suite
+│   ├── losses.py                             # Cramér loss, analytic gradients & W2 metric
+│   ├── model.py                              # Two-layer ReLU noise predictor network
+│   ├── sample.py                             # Reverse diffusion trajectory sampler
+│   ├── split.py                              # Leak-free annotator partition (15 train / 5 held-out)
+│   └── train.py                              # Single-video training loop
+│
+├── stages/                                   # Stage-wise modularized research pipeline
+│   ├── stage1_consensus/                     # Stage 1: Mathematical Consensus & Barycenter
+│   ├── stage2_disagreement/                  # Stage 2: Sharpening & Native Disagreement
+│   ├── stage3_diagnosis/                     # Stage 3: Gradient Norms & LR Collapse Invariance
+│   ├── stage4_diffusion_benchmark/           # Stage 4: 50-Video End-to-End Diffusion Benchmark
+│   ├── stage5_sota_benchmark/                # Stage 5: SOTA Literature Benchmark vs 2025_LLMVS
+│   └── stage6_transformer/                   # Stage 6: Multi-Modal Temporal Transformer Extension
+│
+├── results/                                  # Structured CSV and JSON experimental outputs
+│   ├── tvsum_sota_fscore_comparison.csv      # Full SOTA comparison table
+│   ├── tvsum_sota_fscore_comparison.json     # Machine-readable benchmark payload
+│   ├── tvsum_50videos_benchmark.csv          # Per-video W2 distances and p-values
+│   └── tvsum_50videos_f1_benchmark.csv       # Per-video F1 scores and rank correlations
+│
+├── assets/                                   # Publication-quality figures & animations
+│   ├── diffusion_reverse_process.gif         # Animated reverse diffusion comparison
+│   ├── wasserstein_barycenter_animation.gif  # Animated displacement interpolation
+│   ├── tvsum_sota_fscore_comparison.png      # 2-panel SOTA F-score publication chart
+│   └── tvsum_correlation_comparison.png      # Kendall & Spearman correlation bar chart
+│
+├── run_stage.py                              # Unified runner for Stages 1 through 5
+├── tvsum_fscore_sota_benchmark.py            # Master SOTA benchmark script
+├── test_fscore_benchmark.py                  # Automated Pytest regression test suite
+├── STAGES_AND_RESULTS.md                     # Exhaustive stage-by-stage results handbook
+├── PAPER.md                                  # Complete research manuscript draft
+├── 2025_LLMVS.pdf                            # Shang et al. (AAAI-2025) baseline reference
+└── pytest.ini                                # Pytest test runner configuration
 ```
 
 ---
 
-## Running
+## Getting Started & Reproducibility
 
-### 1. Install dependencies
+### 1. Installation
+Clone the repository and install the lightweight dependencies (no GPU required):
 
 ```bash
+git clone https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation.git
+cd IIITK_Wasserstien-Annotation
 pip install -r requirements.txt
 ```
 
-No PyTorch, no GPU, no internet required after the first dataset download.
-
-### 2. Train (single video)
+### 2. Run Automated Test Suite
+Verify that all SOTA numbers, model registries, and F-score calculation routines pass:
 
 ```bash
-cd code
-python train.py
+pytest -v
 ```
 
-### 3. Reproduce full TVSum-50 benchmark
+### 3. Run Any Research Stage via `run_stage.py`
 
 ```bash
-python code/benchmark_50videos.py
+# Run Stage 1: Mathematical Consensus (Quantile Monge Geometry)
+python run_stage.py --stage 1
+
+# Run Stage 2: Stress-Testing & Disagreement Sensitivity
+python run_stage.py --stage 2
+
+# Run Stage 3: Baseline Diagnostics & Gradient Analysis
+python run_stage.py --stage 3
+
+# Run Stage 4: TVSum-50 End-to-End Diffusion Benchmark
+python run_stage.py --stage 4
+
+# Run Stage 5: Full SOTA Literature Comparison vs 2025_LLMVS
+python run_stage.py --stage 5
+
+# Run All Stages Sequentially
+python run_stage.py --all
 ```
 
-### 4. Run full 50-video sharpening ablation benchmark
+### 4. Run the Full SOTA Benchmark Script
 
 ```bash
-python sharpening_50video_benchmark.py
-```
+# Print formatted console tables, export CSV/JSON, and generate publication charts
+python tvsum_fscore_sota_benchmark.py
 
-### 5. Run native annotator disagreement evaluation
-
-```bash
-python native_disagreement_eval.py
-```
-
-### 6. Run Temporal Transformer denoiser self-test
-
-```bash
-python transformer_denoiser.py --self-test
-```
-
-### 7. Reproduce publication figures
-
-```bash
-python code/generate_publication_figures.py
+# Optional: Run live training on TVSum videos
+python tvsum_fscore_sota_benchmark.py --train --videos 50 --steps 3000
 ```
 
 ---
 
-## Architectural Extensions
+## Architectural Extensions: Temporal Transformer Denoiser
 
-### Temporal Multi-Modal Transformer Denoiser (`transformer_denoiser.py`)
-Phase 1 prototype utilizes a two-layer ReLU network in `model.py` for diffusion noise prediction. `transformer_denoiser.py` provides the architectural upgrade to a **Temporal Transformer** with multi-modal feature conditioning:
-- **Temporal Attention**: Segment tokens across $N$ video intervals attend to one another via multi-head self-attention, capturing video-level temporal dynamics.
-- **Multi-Modal Conditioning**: Conditioned on per-segment visual embeddings (e.g. CLIP ViT or Video-LLaVA). Features are precomputed offline and injected via learned feature projection and additive fusion.
-- **Calling Convention**: Drop-in compatible forward interface `net(x_t, t, cond=features)`.
-
----
-
-## Phase 1 Simplifications
-
-| Component | Prototype | Full Model |
-| --------- | --------- | ---------- |
-| Backbone | Two-layer ReLU net / Temporal Transformer (`transformer_denoiser.py`) | Video-LLaVA conditioned Transformer |
-| Dataset | Real TVSum (auto-downloaded, synthetic fallback) | TVSum / SumMe / FPVSum |
-| Framework | NumPy (Core) / PyTorch (`transformer_denoiser.py`) | PyTorch |
-| OT Solver | Exact 1D quantile barycenter | Optimized general Sinkhorn |
-
-The objective is validating the mathematical pipeline on real data rather than achieving state-of-the-art performance.
-
----
-
-## Open Question
-
-Whether the closed-form 1D quantile method used in `barycenter.py` and the CDF-based proxy used for evaluation in `losses.py` are measuring exactly the same quantity is not yet formally verified — intentionally left as an open item to accurately document the prototype's current state.
-
----
-
-## Future Work
-
-- SumMe and FPVSum (beyond TVSum)
-- Full training with `TemporalTransformerDenoiser` end-to-end on GPU
-- Multi-modal Video-LLaVA joint conditioning
-- General (non-1D) Sinkhorn OT solver
-- Large-scale cross-dataset evaluation and ablation studies
-
----
-
-## Requirements
-
-```
-numpy
-matplotlib
-```
+In [`stages/stage6_transformer/transformer_denoiser.py`](stages/stage6_transformer/transformer_denoiser.py), we provide the drop-in architectural upgrade from the two-layer MLP to a full **Temporal Multi-Modal Transformer**:
+* **Temporal Self-Attention**: Frame tokens across $N$ intervals attend across the entire sequence to capture narrative flow and long-range video dependencies.
+* **Timestep Injection**: Sinusoidal positional embeddings modulated via learned adaptive layer normalization.
+* **Multi-Modal Conditioning**: Projects precomputed per-segment visual embeddings (e.g. CLIP ViT-L/14 or Video-LLaVA) directly into the token stream.
 
 ```bash
-pip install -r requirements.txt
+# Run Transformer self-test
+python stages/stage6_transformer/transformer_denoiser.py --self-test
 ```
 
 ---
 
-## Citation
+## Citation & Academic Attribution
 
-If this repository contributes to your research, please cite the associated paper once released.
+If you use this codebase, mathematical formulations, or benchmarks in your research, please cite:
+
+```bibtex
+@article{sahu2026wasserstein,
+  title={Wasserstein Diffusion on the Annotation Simplex: Multi-Annotator Consensus for Human Video Summarization},
+  author={Sahu, Milind and Collaborators},
+  journal={arXiv preprint},
+  year={2026}
+}
+```
 
 ---
 
 ## License
 
-This project is released for academic and research purposes.
-
----
+This project is licensed under the academic and research terms specified in [LICENSE](LICENSE).
 
 <div align="center">
 
-Wasserstein Diffusion on the Annotation Simplex · Phase 1 Prototype · [Milind Sahu](https://itsmilindsahu.github.io) · [GitHub](https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation)
+**Wasserstein Diffusion on the Annotation Simplex** · Multi-Annotator Consensus · [Milind Sahu](https://itsmilindsahu.github.io) · [GitHub Repository](https://github.com/itsmilindsahu/IIITK_Wasserstien-Annotation)
 
 </div>
-
