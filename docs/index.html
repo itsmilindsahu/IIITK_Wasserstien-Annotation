@@ -111,9 +111,10 @@
       <p>
         You will watch or skip each original, then compare two summaries. The
         letters A and B are randomized and do not identify the methods. Your
-        answers are saved to the researcher's Google Sheet without your name
-        or email. You may stop at any time; responses already submitted cannot
-        be withdrawn by this page.
+        Each video's answers are submitted to the researcher's Google Form
+        without your name or email. A separate response record is created for
+        each completed video. You may stop at any time; submitted answers
+        cannot be withdrawn by this page.
       </p>
       <label for="first-video">Which video would you like to start with?</label>
       <select id="first-video">
@@ -213,17 +214,17 @@
 
     <section id="done-step" class="card" hidden>
       <h2>Thank you for participating</h2>
-      <p>Your responses have been submitted.</p>
+      <p>Your answers were sent to the study response form.</p>
     </section>
-    <iframe id="submission-frame" name="submission-frame" title="Response submission" hidden></iframe>
+    <iframe id="submission-frame" name="submission-frame" title="Google Forms response submission" hidden></iframe>
     <form id="submission-form" method="post" target="submission-frame" hidden>
-      <input name="payload">
+      <input name="entry.1411265540">
     </form>
   </main>
   <script>
     "use strict";
     const CONFIG = {
-      responseEndpoint: "SET_GOOGLE_APPS_SCRIPT_WEB_APP_URL",
+      responseEndpoint: "https://docs.google.com/forms/d/e/1FAIpQLSc4VvTNUGjokdDJ80OLV2CSgzRerZFMrypgZQkNarbwrsIMzw/formResponse",
       videos: [
         { id: "video_1b7119f62c3c35f5", youtubeId: "rz1B4B2yBZY" },
         { id: "video_55a15a20b3b64e8d", youtubeId: "ClpGjUQ7prU" },
@@ -232,7 +233,7 @@
     };
 
     const byId = (id) => document.getElementById(id);
-    const endpointReady = CONFIG.responseEndpoint.startsWith("https://script.google.com/macros/s/");
+    const endpointReady = CONFIG.responseEndpoint.startsWith("https://docs.google.com/forms/d/e/");
     const state = {
       testerId: "",
       videos: [],
@@ -244,8 +245,7 @@
       playedA: 0,
       playedB: 0,
       firstWatched: "none",
-      pendingSubmissionId: "",
-      submissionTimeout: 0
+      pendingSubmission: false
     };
 
     function shuffled(items) {
@@ -364,24 +364,10 @@
       showSummaries();
     });
 
-    window.addEventListener("message", (event) => {
-      if (
-        event.source !== byId("submission-frame").contentWindow ||
-        !event.data ||
-        event.data.type !== "study-response-saved" ||
-        event.data.submissionId !== state.pendingSubmissionId
-      ) return;
-
-      window.clearTimeout(state.submissionTimeout);
-      state.pendingSubmissionId = "";
+    byId("submission-frame").addEventListener("load", () => {
+      if (!state.pendingSubmission) return;
+      state.pendingSubmission = false;
       byId("submit-button").disabled = false;
-      if (!event.data.ok) {
-        byId("submit-error").textContent =
-          "We could not save your answer. Please try submitting again.";
-        byId("submit-error").hidden = false;
-        return;
-      }
-
       state.index += 1;
       if (state.index < state.videos.length) {
         showSource();
@@ -393,28 +379,16 @@
 
     byId("answer-form").addEventListener("submit", (event) => {
       event.preventDefault();
-      if (!endpointReady || state.pendingSubmissionId) return;
+      if (!endpointReady || state.pendingSubmission) return;
       const submitButton = byId("submit-button");
       submitButton.disabled = true;
       byId("submit-error").hidden = true;
       const submission = byId("submission-form");
       submission.action = CONFIG.responseEndpoint;
-      state.pendingSubmissionId = crypto.randomUUID();
-      submission.elements.payload.value = JSON.stringify({
-        ...responseForCurrentVideo(),
-        submission_id: state.pendingSubmissionId,
-        honeypot: ""
-      });
+      state.pendingSubmission = true;
+      submission.querySelector('input[name="entry.1411265540"]').value =
+        JSON.stringify(responseForCurrentVideo());
       submission.submit();
-      const submittedId = state.pendingSubmissionId;
-      state.submissionTimeout = window.setTimeout(() => {
-        if (state.pendingSubmissionId !== submittedId) return;
-        state.pendingSubmissionId = "";
-        submitButton.disabled = false;
-        byId("submit-error").textContent =
-          "We could not confirm the save. You may submit again; duplicate answers are ignored.";
-        byId("submit-error").hidden = false;
-      }, 20000);
     });
   </script>
 </body>
