@@ -366,6 +366,7 @@
 
     window.addEventListener("message", (event) => {
       if (
+        event.source !== byId("submission-frame").contentWindow ||
         !event.data ||
         event.data.type !== "study-response-saved" ||
         event.data.submissionId !== state.pendingSubmissionId

@@ -50,15 +50,10 @@ function doPost(event) {
     const sheet = getResponseSheet();
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
-      const existingTester = sheet
-        .getRange(2, 1, lastRow - 1, 1)
-        .createTextFinder(response.tester_id)
-        .matchEntireCell(true)
-        .findNext();
-      if (
-        existingTester &&
-        sheet.getRange(existingTester.getRow(), 2).getValue() === response.video_id
-      ) {
+      const existingResponses = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+      if (existingResponses.some(
+        (row) => row[0] === response.tester_id && row[1] === response.video_id
+      )) {
         return resultPage(submissionId, true);
       }
     }
