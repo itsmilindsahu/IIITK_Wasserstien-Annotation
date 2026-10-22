@@ -1,0 +1,42 @@
+{
+  "annotation_file": "official_annotations.tsv",
+  "annotation_sha256": "13972d16f2f05016dcbb4a62563cc74db98e829facbd8151cd0276cf47b4bd98",
+  "num_videos": 50,
+  "seed": 0,
+  "monotonic_advantage": false,
+  "terciles": [
+    {
+      "bucket": "Low native disagreement",
+      "n_videos": 16,
+      "mean_native_spread": 39771.15082401316,
+      "w2_barycenter": 21151.0008375,
+      "w2_mean": 21566.949050000003,
+      "gap_pct": 2.1648145539090593,
+      "win_rate": "11/16",
+      "p_ttest": 0.003907755524542484,
+      "p_wilcoxon": 0.009185791015625
+    },
+    {
+      "bucket": "Medium native disagreement",
+      "n_videos": 16,
+      "mean_native_spread": 82336.29556578948,
+      "w2_barycenter": 46445.870650000004,
+      "w2_mean": 46903.002712500005,
+      "gap_pct": 1.170534842619307,
+      "win_rate": "10/16",
+      "p_ttest": 0.15801277404528566,
+      "p_wilcoxon": 0.252227783203125
+    },
+    {
+      "bucket": "High native disagreement",
+      "n_videos": 18,
+      "mean_native_spread": 355279.93325497076,
+      "w2_barycenter": 210951.3812,
+      "w2_mean": 212847.5700222222,
+      "gap_pct": -0.18144306624586468,
+      "win_rate": "12/18",
+      "p_ttest": 0.20729930960062481,
+      "p_wilcoxon": 0.12973785400390625
+    }
+  ]
+}

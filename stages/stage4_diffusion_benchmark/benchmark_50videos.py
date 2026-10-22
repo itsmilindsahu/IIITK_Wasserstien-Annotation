@@ -26,8 +26,8 @@ from scipy import stats
 # Ensure imports work regardless of execution directory
 sys.path.insert(0, os.path.dirname(__file__))
 
-from dataset import load_tvsum_data, get_video_distributions
-from download_tvsum import download_or_generate_tvsum
+from dataset import load_tvsum_data, get_video_distributions, stable_seed
+from download_tvsum import require_tvsum_annotations
 from barycenter import wasserstein_barycenter, arithmetic_mean
 from forward import forward_step_mine, forward_step_baseline
 from losses import wasserstein_loss, w2_1d
@@ -106,7 +106,7 @@ def train_and_sample(train_annotators, heldout_annotators, mode="mine", steps=10
 def run_benchmark(n_videos=50, frames=100, method="softmax", temperature=0.5, steps=100):
     tsv_path = os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv")
     if not os.path.exists(tsv_path):
-        download_or_generate_tvsum(tsv_path)
+        require_tvsum_annotations(tsv_path)
 
     tvsum_videos = load_tvsum_data(tsv_path)
     vid_keys = list(tvsum_videos.keys())[:n_videos]
@@ -124,7 +124,7 @@ def run_benchmark(n_videos=50, frames=100, method="softmax", temperature=0.5, st
         dist = get_video_distributions(raw_scores, method=method, temperature=temperature)
         
         # Per-video deterministic seed for splitting
-        vid_seed = abs(hash(vid)) % (2**31 - 1)
+        vid_seed = stable_seed(vid)
         train_ann, heldout_ann = split_annotators(dist, n_holdout=5, seed=vid_seed)
 
         mine_res = train_and_sample(train_ann, heldout_ann, mode="mine", steps=steps, seed=vid_seed + 1)
@@ -207,7 +207,7 @@ def analyze_and_save(results, output_dir="results"):
     print("=" * 75)
     print(f"Total Videos:                  {total}")
     print(f"Mine (Proposed Framework):     {mine_mean:.4f} +/- {mine_std:.4f}")
-    print(f"Baseline (AAAI-25 standard):   {base_mean:.4f} +/- {base_std:.4f}")
+    print(f"Euclidean mean baseline:       {base_mean:.4f} +/- {base_std:.4f}")
     print(f"Mean Difference (Base - Mine): {gap_mean:.4f} +/- {gap_std:.4f}  ({avg_gap_pct:+.2f}%)")
     print(f"Win Rate (Mine < Baseline):    {wins}/{total} ({win_rate:.1f}%)")
     print("-" * 75)
@@ -236,7 +236,7 @@ def analyze_and_save(results, output_dir="results"):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Box plot
-    ax1.boxplot([mine_w2, base_w2], tick_labels=["Proposed (Mine)", "Baseline (AAAI-25)"], patch_artist=True,
+    ax1.boxplot([mine_w2, base_w2], tick_labels=["MSPDM prototype", "Euclidean mean baseline"], patch_artist=True,
                 boxprops=dict(facecolor="#d0e1fd", color="#1f77b4"),
                 medianprops=dict(color="#08306b", linewidth=2))
     ax1.set_ylabel("Held-Out W2 Distance (Lower is Better)")

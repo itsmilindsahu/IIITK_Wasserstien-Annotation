@@ -1,21 +1,26 @@
 """
 compare_downstream_metrics.py
 
-Comprehensive Comparison between Baseline (AAAI-25 standard) and Proposed (MSPDM):
+Comparison between an in-repository Euclidean mean-target baseline and the MSPDM prototype:
 Computes both:
-  1. Standard Literature Metrics:
-     - Mean F1-score (top 15% length budget knapsack/ranking against annotators)
-     - Spearman's Rank Correlation (rho)
-     - Kendall's Rank Correlation (tau)
+  1. Annotation-only agreement metrics:
+     - Top-15% position overlap F1
+     - Spearman's rank correlation (rho)
+     - Kendall's rank correlation (tau)
   2. Geometric & Optimal Transport Metrics:
      - Held-out 1D Wasserstein-2 Distance (W2)
      - Simplex Mass Conservation & Non-Negativity Violation Rate
+
+The annotation-change interval metric below is project-specific; it does not
+implement the canonical video-shot TVSum evaluation protocol.
 """
 
 import os
 import sys
 import json
 import csv
+import argparse
+import hashlib
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -25,7 +30,7 @@ from scipy import stats
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dataset import load_tvsum_data, get_video_distributions, stable_seed
-from download_tvsum import download_or_generate_tvsum
+from download_tvsum import require_tvsum_annotations
 from barycenter import wasserstein_barycenter, arithmetic_mean, blended_barycenter
 from forward import forward_step_mine, forward_step_baseline
 from losses import wasserstein_loss, w2_1d
@@ -36,8 +41,8 @@ from sample import generate_sample
 
 def evaluate_f1_and_correlations(predicted_dist, ground_truth_scores, budget_pct=0.15):
     """
-    Computes standard downstream summarization metrics:
-      - F1 score (top 15% budget summary vs each annotator's top 15% ground truth)
+    Computes annotation-only agreement metrics:
+      - Position-overlap F1 (top budget fraction vs each annotator's top fraction)
       - Spearman rank correlation
       - Kendall tau rank correlation
     """
@@ -75,10 +80,114 @@ def evaluate_f1_and_correlations(predicted_dist, ground_truth_scores, budget_pct
     }
 
 
+def annotation_change_segments(all_annotations):
+    """Partition annotation positions where any annotator's score changes.
+
+    These intervals are not video-shot boundaries and must not be used to
+    claim canonical TVSum summarization F1.
+    """
+    annotations = np.asarray(all_annotations)
+    if annotations.ndim != 2 or annotations.shape[0] == 0 or annotations.shape[1] == 0:
+        raise ValueError("all_annotations must have shape (annotators, frames)")
+    if not np.all(np.isfinite(annotations)):
+        raise ValueError("all_annotations must contain only finite scores")
+
+    boundaries = np.flatnonzero(
+        np.any(annotations[:, 1:] != annotations[:, :-1], axis=0)
+    ) + 1
+    starts = np.r_[0, boundaries]
+    ends = np.r_[boundaries, annotations.shape[1]]
+    return np.column_stack((starts, ends))
+
+
+def _knapsack_summary(frame_scores, segments, budget_pct):
+    """Select caller-supplied intervals with a duration budget."""
+    scores = np.asarray(frame_scores, dtype=float)
+    segments = np.asarray(segments, dtype=int)
+    if scores.ndim != 1 or scores.size == 0 or not np.all(np.isfinite(scores)):
+        raise ValueError("frame_scores must be a non-empty finite 1D array")
+    if (
+        segments.ndim != 2
+        or segments.shape[1] != 2
+        or segments.shape[0] == 0
+        or np.any(segments[:, 0] < 0)
+        or np.any(segments[:, 1] > scores.size)
+        or np.any(segments[:, 1] <= segments[:, 0])
+        or np.any(segments[1:, 0] != segments[:-1, 1])
+        or segments[0, 0] != 0
+        or segments[-1, 1] != scores.size
+    ):
+        raise ValueError("segments must partition the frame-score vector")
+    if not 0 < budget_pct <= 1:
+        raise ValueError("budget_pct must be in (0, 1]")
+
+    weights = segments[:, 1] - segments[:, 0]
+    values = np.array(
+        [scores[start:end].mean() for start, end in segments],
+        dtype=float,
+    )
+    budget = int(budget_pct * scores.size)
+    table = np.zeros((len(segments) + 1, budget + 1), dtype=float)
+    for item, (weight, value) in enumerate(zip(weights, values)):
+        if weight <= budget:
+            table[item + 1, weight:] = np.maximum(
+                table[item, weight:],
+                value + table[item, :-weight],
+            )
+
+    selected_segments = np.zeros(len(segments), dtype=bool)
+    remaining = budget
+    item = len(segments)
+    best = table[item, remaining]
+    while item > 0 and best > 0:
+        if table[item, remaining] == table[item - 1, remaining]:
+            item -= 1
+            continue
+        selected_segments[item - 1] = True
+        remaining -= weights[item - 1]
+        item -= 1
+        best = table[item, remaining]
+
+    summary = np.zeros(scores.size, dtype=bool)
+    for selected, (start, end) in zip(selected_segments, segments):
+        if selected:
+            summary[start:end] = True
+    if not summary.any():
+        selected_frames = np.argsort(scores, kind="stable")[-max(1, budget):]
+        summary[selected_frames] = True
+    return summary
+
+
+def evaluate_annotation_segment_f1(predicted_scores, heldout_annotations, segments, budget_pct=0.15):
+    """Score agreement on annotation-change intervals, not canonical TVSum F1."""
+    predictions = np.asarray(predicted_scores, dtype=float)
+    annotations = np.asarray(heldout_annotations, dtype=float)
+    if annotations.ndim != 2 or annotations.shape[1] != predictions.size:
+        raise ValueError("heldout_annotations must have shape (annotators, positions)")
+    if annotations.shape[0] == 0 or not np.all(np.isfinite(annotations)):
+        raise ValueError("heldout_annotations must be non-empty and finite")
+
+    predicted_summary = _knapsack_summary(predictions, segments, budget_pct)
+    predicted_count = int(predicted_summary.sum())
+    scores = []
+    for annotation in annotations:
+        true_summary = _knapsack_summary(annotation, segments, budget_pct)
+        true_count = int(true_summary.sum())
+        overlap = int(np.count_nonzero(predicted_summary & true_summary))
+        precision = overlap / predicted_count if predicted_count else 0.0
+        recall = overlap / true_count if true_count else 0.0
+        scores.append(
+            2 * precision * recall / (precision + recall)
+            if precision + recall
+            else 0.0
+        )
+    return float(np.mean(scores) * 100.0)
+
+
 def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0.01):
     tsv_path = os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv")
     if not os.path.exists(tsv_path):
-        download_or_generate_tvsum(tsv_path)
+        require_tvsum_annotations(tsv_path)
 
     tvsum_videos = load_tvsum_data(tsv_path)
     vid_keys = list(tvsum_videos.keys())[:n_videos]
@@ -108,10 +217,11 @@ def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0
         # comparable across different bary_alpha values, since vid_seed doesn't
         # change with alpha.
         net_mine = NoisePredictor(frames, lr=lr, rng=np.random.default_rng(vid_seed))
-        rng = np.random.default_rng(vid_seed + 1000)  # separate stream for the t-schedule
+        rng_mine_steps = np.random.default_rng(vid_seed + 1000)
+        rng_mine_forward = np.random.default_rng(vid_seed + 2000)
         for _ in range(steps):
-            t = rng.integers(1, 200)
-            xt = forward_step_mine(x_star_mine, t, rng=rng)
+            t = rng_mine_steps.integers(1, 200)
+            xt = forward_step_mine(x_star_mine, t, rng=rng_mine_forward)
             eps_hat = net_mine.forward(xt, t)
             grad_mse = 2 * (eps_hat - x_star_mine) / frames
             P = np.cumsum(eps_hat)
@@ -124,12 +234,14 @@ def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0
 
         gen_mine = generate_sample(net_mine, frames, T=200, mode="mine", rng=np.random.default_rng(vid_seed + 10))
 
-        # 2. Train Baseline (AAAI-25)
+        # 2. Train the Euclidean mean-target baseline.
         x_star_base = arithmetic_mean(train_ann)
         net_base = NoisePredictor(frames, lr=lr, rng=np.random.default_rng(vid_seed))
+        rng_base_steps = np.random.default_rng(vid_seed + 1000)
+        rng_base_forward = np.random.default_rng(vid_seed + 2000)
         for _ in range(steps):
-            t = rng.integers(1, 200)
-            xt = forward_step_baseline(x_star_base, t, rng=rng)
+            t = rng_base_steps.integers(1, 200)
+            xt = forward_step_baseline(x_star_base, t, rng=rng_base_forward)
             eps_hat = net_base.forward(xt, t)
             grad_mse = 2 * (eps_hat - x_star_base) / frames
             net_base.step(xt, t, grad_mse)
@@ -166,9 +278,9 @@ def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0
 
 def print_comparison_table(metrics):
     print("=" * 85)
-    print("      COMPREHENSIVE COMPARISON: PROPOSED (MSPDM) vs BASELINE (AAAI-25) ON TVSUM-50")
+    print("      COMPARISON: MSPDM PROTOTYPE vs EUCLIDEAN MEAN-TARGET BASELINE")
     print("=" * 85)
-    print(f"{'Evaluation Metric':<32} | {'Baseline (AAAI-25)':<20} | {'Proposed (MSPDM)':<20} | {'Win Rate / p-val'}")
+    print(f"{'Evaluation Metric':<32} | {'Euclidean mean':<20} | {'MSPDM prototype':<20} | {'Win Rate / p-val'}")
     print("-" * 85)
 
     for name, key, higher_better in [
@@ -221,9 +333,17 @@ def analyze_and_save(metrics, records, output_dir="results"):
     t_stat, t_pval = float(ttest_res.statistic), float(ttest_res.pvalue)
     wilcoxon_res = stats.wilcoxon(mine_f1, base_f1, alternative='two-sided')
     w_stat, w_pval = float(wilcoxon_res.statistic), float(wilcoxon_res.pvalue)
+    annotation_path = os.environ.get(
+        "TVSUM_ANNOTATION_TSV",
+        os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv"),
+    )
+    with open(annotation_path, "rb") as annotation_file:
+        annotation_sha256 = hashlib.sha256(annotation_file.read()).hexdigest()
 
     summary = {
         "num_videos": total,
+        "annotation_file": os.path.basename(annotation_path),
+        "annotation_sha256": annotation_sha256,
         "mine_mean_f1": {"mean": mine_mean, "std": mine_std},
         "baseline_mean_f1": {"mean": base_mean, "std": base_std},
         "gap_absolute": {"mean": gap_mean, "std": gap_std},
@@ -269,7 +389,7 @@ def analyze_and_save(metrics, records, output_dir="results"):
     # Figure: box plot of F1 + per-video gap histogram (mirrors the W2 figure)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-    ax1.boxplot([mine_f1, base_f1], tick_labels=["Proposed (MSPDM)", "Baseline (AAAI-25)"],
+    ax1.boxplot([mine_f1, base_f1], tick_labels=["MSPDM prototype", "Euclidean mean baseline"],
                 patch_artist=True,
                 boxprops=dict(facecolor="#d0e1fd", color="#1f77b4"),
                 medianprops=dict(color="#08306b", linewidth=2))
@@ -299,7 +419,16 @@ def analyze_and_save(metrics, records, output_dir="results"):
 
 
 if __name__ == "__main__":
-    n = int(sys.argv[1]) if len(sys.argv) > 1 else 50
-    metrics, records = run_full_comparison(n_videos=n)
+    parser = argparse.ArgumentParser(description="Run the TVSum-50 held-out comparison.")
+    parser.add_argument("--videos", type=int, default=50)
+    parser.add_argument("--frames", type=int, default=100)
+    parser.add_argument("--steps", type=int, default=100)
+    parser.add_argument(
+        "--output-dir", default=os.path.join("results", "real_tvsum", "stage4")
+    )
+    args = parser.parse_args()
+    metrics, records = run_full_comparison(
+        n_videos=args.videos, frames=args.frames, steps=args.steps
+    )
     print_comparison_table(metrics)
-    analyze_and_save(metrics, records)
+    analyze_and_save(metrics, records, output_dir=args.output_dir)

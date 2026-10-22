@@ -1,0 +1,9 @@
+{
+  "shape_ok": true,
+  "nonneg_ok": true,
+  "norm_ok": true,
+  "initial_loss": 13.83364777331924,
+  "final_loss": 13.291578683379951,
+  "loss_decreasing": true,
+  "all_checks_pass": true
+}

@@ -1,0 +1,9 @@
+method,reference,kendall_tau,spearman_rho
+dppLSTM,Zhang et al. (ECCV 2016),0.042,0.055
+HSA,Zhao et al. (CVPR 2018),0.082,0.088
+DSNet_ab,Zhu et al. (CVPR 2020),0.108,0.129
+DSNet_af,Zhu et al. (CVPR 2020),0.113,0.138
+RSGN,Zhao et al. (ICCV 2021),0.083,0.09
+SSPVS,Li et al. (ICCV 2023),0.177,0.233
+2025_LLMVS,Shang et al. (AAAI-2025),0.179,0.238
+MSPDM (Ours),This Work (Synthetic Proxy),0.009254946073078509,0.0123969433897953

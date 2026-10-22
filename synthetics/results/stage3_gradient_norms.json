@@ -1,0 +1,5 @@
+{
+  "avg_mse_gradient_norm": 0.004187351356478099,
+  "avg_cramer_gradient_norm": 100.28756901597004,
+  "ratio_cramer_over_mse": 23950.120369244578
+}

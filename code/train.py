@@ -128,7 +128,7 @@ def run_config(train_annotators, heldout_annotators, mode="mine", steps=80, T=20
 
 
 from dataset import load_tvsum_data, get_video_distributions
-from download_tvsum import download_or_generate_tvsum
+from download_tvsum import require_tvsum_annotations
 
 def main():
     results_dir = os.path.join(os.path.dirname(__file__), "..", "results")
@@ -136,7 +136,7 @@ def main():
 
     tsv_path = os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv")
     if not os.path.exists(tsv_path):
-        download_or_generate_tvsum(tsv_path)
+        require_tvsum_annotations(tsv_path)
 
     tvsum_videos = load_tvsum_data(tsv_path)
     # Pick a video for the visualization/experiment, e.g., the first one

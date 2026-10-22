@@ -1,0 +1,7 @@
+numpy>=1.22,<2.3
+torch>=2.5,<2.6
+torchvision==0.20.1
+gradio>=5.0,<6
+scenedetect[opencv]>=0.6.4,<0.7
+yt-dlp>=2024.12
+imageio-ffmpeg>=0.5

@@ -1,0 +1,5 @@
+descriptor,definition,n_videos,spearman_rho,bootstrap_ci_95_lower,bootstrap_ci_95_upper,bootstrap_resamples
+mean_consensus_interior_peak_count,count; scipy.signal.find_peaks on mean curve divided by its maximum; fixed prominence=0.1,50,-0.31043812557734873,-0.5719621578348618,-0.016637850906995225,10000
+mean_pairwise_spearman_rho,unitless; saved mean pairwise Spearman rho among 20 annotators,50,-0.28855434712632044,-0.5112575398490832,-0.028415671188879544,10000
+annotator_dominant_peak_location_sd_picks,pick indices; population SD of each annotator's argmax location,50,-0.20999303710823752,-0.46058789376533105,0.07176508343733543,10000
+weighted_overlap_fraction_of_mean_selected_mass,fraction; mean-target probability mass selected by both canonical summaries divided by mass selected by the mean summary,50,0.2928247440405639,0.008721757893771737,0.5423810713338023,10000

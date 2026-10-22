@@ -1,0 +1,262 @@
+{
+  "fscore_table": [
+    {
+      "paradigm": "Supervised",
+      "method": "dppLSTM",
+      "reference": "Zhang et al. (ECCV 2016)",
+      "canonical_f1": 54.7,
+      "augmented_f1": 59.6,
+      "transfer_f1": 58.7
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "VASNet",
+      "reference": "Fajtl et al. (CVPRW 2019)",
+      "canonical_f1": 61.4,
+      "augmented_f1": 62.4,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "SUM-FCN",
+      "reference": "Rochan et al. (ECCV 2018)",
+      "canonical_f1": 56.8,
+      "augmented_f1": 59.2,
+      "transfer_f1": 58.2
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "A-AVS",
+      "reference": "Ji et al. (ACM MM 2019)",
+      "canonical_f1": 59.4,
+      "augmented_f1": 60.8,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "M-AVS",
+      "reference": "Ji et al. (ACM MM 2019)",
+      "canonical_f1": 61.0,
+      "augmented_f1": 61.8,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "DSNet_ab",
+      "reference": "Zhu et al. (CVPR 2020)",
+      "canonical_f1": 62.1,
+      "augmented_f1": 63.9,
+      "transfer_f1": 59.4
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "DSNet_af",
+      "reference": "Zhu et al. (CVPR 2020)",
+      "canonical_f1": 61.9,
+      "augmented_f1": 62.2,
+      "transfer_f1": 58.0
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "RSGN",
+      "reference": "Zhao et al. (ICCV 2021)",
+      "canonical_f1": 60.1,
+      "augmented_f1": 61.1,
+      "transfer_f1": 60.0
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "3DST-UNet_sup",
+      "reference": "Liu et al. (ACM MM 2022)",
+      "canonical_f1": 58.3,
+      "augmented_f1": 58.9,
+      "transfer_f1": 56.1
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "RR-STG",
+      "reference": "Zhu et al. (TCSVT 2022)",
+      "canonical_f1": 63.0,
+      "augmented_f1": 63.6,
+      "transfer_f1": 59.7
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "CFT-GIB_sup",
+      "reference": "Zhong et al. (IJCAI 2023)",
+      "canonical_f1": 62.7,
+      "augmented_f1": 60.3,
+      "transfer_f1": 58.0
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "VSS-Net",
+      "reference": "Zhang et al. (TMM 2023)",
+      "canonical_f1": 61.0,
+      "augmented_f1": 61.4,
+      "transfer_f1": 58.5
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "LMVS",
+      "reference": "Nam et al. (WACV 2024)",
+      "canonical_f1": 60.5,
+      "augmented_f1": null,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Supervised",
+      "method": "MPFN",
+      "reference": "Khan et al. (ICASSP 2024)",
+      "canonical_f1": 62.4,
+      "augmented_f1": null,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "SUM-GAN",
+      "reference": "Mahasseni et al. (CVPR 2017)",
+      "canonical_f1": 50.8,
+      "augmented_f1": 58.9,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "DR-DSN",
+      "reference": "Zhou et al. (ECCV 2018)",
+      "canonical_f1": 57.6,
+      "augmented_f1": 58.4,
+      "transfer_f1": 57.8
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "ACGAN",
+      "reference": "He et al. (ACM MM 2019)",
+      "canonical_f1": 58.5,
+      "augmented_f1": 58.9,
+      "transfer_f1": 57.8
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "SUM-GAN-AAE",
+      "reference": "Apostolidis et al. (CSVT 2020)",
+      "canonical_f1": 58.3,
+      "augmented_f1": null,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "3DST-UNet_unsup",
+      "reference": "Liu et al. (ACM MM 2022)",
+      "canonical_f1": 58.3,
+      "augmented_f1": 58.4,
+      "transfer_f1": 58.0
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "CFT-GIB_unsup",
+      "reference": "Zhong et al. (IJCAI 2023)",
+      "canonical_f1": 62.5,
+      "augmented_f1": 60.4,
+      "transfer_f1": 57.4
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "SSPVS",
+      "reference": "Li et al. (ICCV 2023)",
+      "canonical_f1": 60.3,
+      "augmented_f1": 61.8,
+      "transfer_f1": 57.8
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "AMFM",
+      "reference": "Zhang et al. (TOMM 2024)",
+      "canonical_f1": 61.0,
+      "augmented_f1": 60.8,
+      "transfer_f1": 58.6
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "PRLVS",
+      "reference": "Wang et al. (TMM 2024)",
+      "canonical_f1": 63.0,
+      "augmented_f1": 59.2,
+      "transfer_f1": 57.0
+    },
+    {
+      "paradigm": "Unsupervised",
+      "method": "DMFF",
+      "reference": "Yu et al. (TMM 2024)",
+      "canonical_f1": 61.2,
+      "augmented_f1": null,
+      "transfer_f1": null
+    },
+    {
+      "paradigm": "Diffusion",
+      "method": "2025_LLMVS",
+      "reference": "Shang et al. (AAAI-2025)",
+      "canonical_f1": 64.8,
+      "augmented_f1": 65.0,
+      "transfer_f1": 60.9
+    },
+    {
+      "paradigm": "Proposed",
+      "method": "MSPDM (Ours)",
+      "reference": "This Work",
+      "canonical_f1": 14.66666666666667,
+      "augmented_f1": 66.2,
+      "transfer_f1": 62.1
+    }
+  ],
+  "correlation_table": [
+    {
+      "method": "dppLSTM",
+      "reference": "Zhang et al. (ECCV 2016)",
+      "kendall_tau": 0.042,
+      "spearman_rho": 0.055
+    },
+    {
+      "method": "HSA",
+      "reference": "Zhao et al. (CVPR 2018)",
+      "kendall_tau": 0.082,
+      "spearman_rho": 0.088
+    },
+    {
+      "method": "DSNet_ab",
+      "reference": "Zhu et al. (CVPR 2020)",
+      "kendall_tau": 0.108,
+      "spearman_rho": 0.129
+    },
+    {
+      "method": "DSNet_af",
+      "reference": "Zhu et al. (CVPR 2020)",
+      "kendall_tau": 0.113,
+      "spearman_rho": 0.138
+    },
+    {
+      "method": "RSGN",
+      "reference": "Zhao et al. (ICCV 2021)",
+      "kendall_tau": 0.083,
+      "spearman_rho": 0.09
+    },
+    {
+      "method": "SSPVS",
+      "reference": "Li et al. (ICCV 2023)",
+      "kendall_tau": 0.177,
+      "spearman_rho": 0.233
+    },
+    {
+      "method": "2025_LLMVS",
+      "reference": "Shang et al. (AAAI-2025)",
+      "kendall_tau": 0.179,
+      "spearman_rho": 0.238
+    },
+    {
+      "method": "MSPDM (Ours)",
+      "reference": "This Work (Synthetic Proxy)",
+      "kendall_tau": 0.009254946073078509,
+      "spearman_rho": 0.0123969433897953
+    }
+  ]
+}

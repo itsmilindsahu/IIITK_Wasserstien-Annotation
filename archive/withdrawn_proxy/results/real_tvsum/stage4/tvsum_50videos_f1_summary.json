@@ -1,0 +1,42 @@
+{
+  "num_videos": 50,
+  "annotation_file": "official_annotations.tsv",
+  "annotation_sha256": "13972d16f2f05016dcbb4a62563cc74db98e829facbd8151cd0276cf47b4bd98",
+  "mine_mean_f1": {
+    "mean": 14.933333333333335,
+    "std": 4.71981397842433
+  },
+  "baseline_mean_f1": {
+    "mean": 15.013333333333332,
+    "std": 5.152090476804453
+  },
+  "gap_absolute": {
+    "mean": -0.07999999999999957,
+    "std": 2.2280015551397656
+  },
+  "mine_wins": 13,
+  "total_videos": 50,
+  "win_rate_pct": 26.0,
+  "statistical_tests": {
+    "paired_t_test": {
+      "t_statistic": -0.25389812841210013,
+      "p_value": 0.8006366546937539,
+      "statistically_significant_p_0_05": false,
+      "statistically_significant_p_0_01": false
+    },
+    "wilcoxon_signed_rank": {
+      "w_statistic": 261.0,
+      "p_value": 0.9552500217642262,
+      "statistically_significant_p_0_05": false,
+      "statistically_significant_p_0_01": false
+    }
+  },
+  "mean_spearman_rho": {
+    "mine": 0.007932723585099988,
+    "baseline": 0.00562569141380701
+  },
+  "mean_kendall_tau": {
+    "mine": 0.005951859082656742,
+    "baseline": 0.004355168343870015
+  }
+}

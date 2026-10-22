@@ -1,0 +1,17 @@
+{
+  "low": {
+    "mean_gap": 0.10300000000000153,
+    "std_gap": NaN,
+    "n_videos": 1
+  },
+  "mid": {
+    "mean_gap": 3.257199999999999,
+    "std_gap": NaN,
+    "n_videos": 1
+  },
+  "high": {
+    "mean_gap": 213.2316000000001,
+    "std_gap": 266.9844470313581,
+    "n_videos": 3
+  }
+}

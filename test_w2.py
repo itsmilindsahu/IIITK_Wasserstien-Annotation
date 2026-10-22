@@ -9,7 +9,7 @@ from forward import forward_step_mine, forward_step_baseline
 from losses import w2_1d
 from model import NoisePredictor
 from dataset import load_tvsum_data, get_video_distributions
-from download_tvsum import download_or_generate_tvsum
+from download_tvsum import require_tvsum_annotations
 
 np.random.seed(7)
 
@@ -77,5 +77,15 @@ def main():
     print(f"Final Mine W2: {mine_w2[-1]:.4f}")
     print(f"Final Baseline W2: {baseline_w2[-1]:.4f}")
 
+def test_w2_properties():
+    p = np.array([0.1, 0.2, 0.4, 0.2, 0.1])
+    q = np.array([0.1, 0.2, 0.4, 0.2, 0.1])
+    assert np.isclose(w2_1d(p, q), 0.0)
+
+    shifted = np.array([0.0, 0.1, 0.2, 0.4, 0.3])
+    assert w2_1d(p, shifted) > 0.0
+
+
 if __name__ == "__main__":
     main()
+

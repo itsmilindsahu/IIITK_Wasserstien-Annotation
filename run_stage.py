@@ -7,8 +7,8 @@ Usage:
   python run_stage.py --stage 1    # Run Stage 1: Mathematical Consensus & Oracle Barycenter
   python run_stage.py --stage 2    # Run Stage 2: Stress-Testing & Disagreement Sensitivity
   python run_stage.py --stage 3    # Run Stage 3: Baseline Diagnostics & Gradient Verification
-  python run_stage.py --stage 4    # Run Stage 4: TVSum-50 End-to-End Diffusion Benchmark
-  python run_stage.py --stage 5    # Run Stage 5: Full SOTA Benchmark vs 2025_LLMVS & 24 Baselines
+  python run_stage.py --stage 4    # Run Stage 4: Legacy annotation-only diagnostics
+  python run_stage.py --stage 5    # Run Stage 5: Real TVSum five-split ablation benchmark
   python run_stage.py --all        # Run all stages sequentially
 """
 
@@ -37,14 +37,14 @@ STAGES = {
         "description": "Verifies Cramér vs MSE gradient norm (3300x larger) and rules out learning rate artifacts."
     },
     4: {
-        "name": "Stage 4: TVSum-50 End-to-End Diffusion Benchmark (Leak-Free Consensus)",
+        "name": "Stage 4: Legacy Annotation-Only Diagnostics",
         "script": os.path.join(PROJECT_ROOT, "code", "compare_downstream_metrics.py"),
-        "description": "Runs 50-video leak-free benchmark comparing Baseline (AAAI-25) vs MSPDM (Ours) on W2, F1, tau, and rho."
+        "description": "Historical annotation-only diagnostic; not the standard video-conditioned TVSum benchmark."
     },
     5: {
-        "name": "Stage 5: State-of-the-Art Literature Benchmark (vs 2025_LLMVS & 24 Baselines)",
-        "script": os.path.join(PROJECT_ROOT, "tvsum_fscore_sota_benchmark.py"),
-        "description": "Comprehensive F-score and correlation comparison with all 24 prior models + 2025_LLMVS on TVSum."
+        "name": "Stage 5: Real TVSum Five-Split Ablation Benchmark",
+        "script": os.path.join(PROJECT_ROOT, "tvsum_cv_entry.py"),
+        "description": "Runs the feature-conditioned TVSum target/loss ablations with the supplied DSNet splits."
     }
 }
 
@@ -66,9 +66,6 @@ def run_single_stage(stage_num, fast=False):
     env["PYTHONPATH"] = f"{PROJECT_ROOT};{code_dir};" + env.get("PYTHONPATH", "")
 
     cmd = [PYTHON_EXE, stage_info["script"]]
-    if fast and stage_num == 5:
-        cmd.append("--fast")
-
     ret = subprocess.run(cmd, cwd=PROJECT_ROOT, env=env)
     if ret.returncode == 0:
         print(f"\n[+] {stage_info['name']} COMPLETED SUCCESSFULLY.\n")

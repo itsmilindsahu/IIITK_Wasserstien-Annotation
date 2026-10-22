@@ -1,0 +1,105 @@
+{
+  "derived_statistics": {
+    "bilstm_vs_uniform": {
+      "aggregation": "mean saved uniform fold/video F1 records within video_key; pair with saved BiLSTM unique_test_video_scores",
+      "mean_f1_difference_points": 2.4924275454574367,
+      "n": 32,
+      "paired_t_p_raw": 0.04928665455289769,
+      "test": "scipy.stats.ttest_rel and scipy.stats.wilcoxon(zero_method='zsplit')",
+      "unit": "unique test video",
+      "wilcoxon_p_raw": 0.06827515306923526
+    }
+  },
+  "description": "Every numeric table cell and generated paper fact is read from a saved JSON or derived from saved per-video JSON values using the recorded paired tests.",
+  "generated_files": {
+    "bilstm_comparison.tex": [
+      "standard_tvsum_cv_bilstm/backbone_comparison.json:summary.paired_bilstm_minus_temporal_conv.{f1,spearman_rho,kendall_tau}"
+    ],
+    "exploratory_smoothing.tex": [
+      "consensus_oracle_8d/results.json:exploratory_high_disagreement_mean_smoothing[mean_gaussian_sigma_*].{mean_gain_vs_mean_f1,bootstrap_ci_95_lower,bootstrap_ci_95_upper,videos_improved,videos_total,video_count}"
+    ],
+    "facts.tex": [
+      "consensus_oracle_8b/results.json:protocol.video_count",
+      "consensus_oracle_8b/results.json:protocol.annotators_per_video",
+      "standard_tvsum_cv_fixed/results.json:protocol.unique_test_videos",
+      "standard_tvsum_cv_bilstm/backbone_comparison.json:protocol.split_count",
+      "standard_tvsum_cv_fixed/results.json:protocol.arms (list length)",
+      "consensus_oracle_8b/results.json:protocol.methods.barycenter",
+      "consensus_oracle_8d/results.json:protocol.bootstrap_ci; mechanism_8e/results.json:protocol.bootstrap_ci; simulation_jitter/SIMULATION_results.json:protocol.bootstrap",
+      "consensus_oracle_8b/results.json:per_video[*].variants.{mean,barycenter}.{f1,spearman_rho,kendall_tau}",
+      "standard_tvsum_cv_fixed/results.json:summary.paired_comparisons[arm_vs_uniform].{paired_t_p,wilcoxon_p}",
+      "standard_tvsum_cv_fixed/results.json:protocol.budget_fraction multiplied by 100",
+      "consensus_oracle_8d/results.json:protocol.bootstrap_samples",
+      "simulation_jitter/SIMULATION_results.json:protocol.simulated_annotators_per_video_per_width",
+      "simulation_jitter/SIMULATION_results.json:protocol.shift_widths_picks",
+      "simulation_jitter/SIMULATION_results.json:protocol.noise.standard_deviation_relative_to_source_curve_max multiplied by 100",
+      "simulation_jitter/SIMULATION_results.json:shift_summary[0].first_positive_mean_gain_shift_width_picks",
+      "consensus_oracle_8d/results.json:w2_characterization_only.label",
+      "consensus_oracle_8d/results.json:exploratory_high_disagreement_mean_smoothing keys",
+      "derived paired comparison from saved backbone unique_test_video_scores and standard benchmark uniform baseline records",
+      "derived scipy paired t-test on the saved paired unique-video BiLSTM/uniform values",
+      "derived scipy Wilcoxon zsplit test on the saved paired unique-video BiLSTM/uniform values"
+    ],
+    "learned_metrics.tex": [
+      "standard_tvsum_cv_fixed/results.json:summary.models[arm].{f1_mean,f1_mean_seed_std,spearman_rho_mean,kendall_tau_mean}",
+      "standard_tvsum_cv_bilstm/backbone_comparison.json:summary.bilstm.{f1_mean,f1_mean_seed_std,spearman_rho_mean,kendall_tau_mean}"
+    ],
+    "learned_vs_uniform.tex": [
+      "standard_tvsum_cv_fixed/results.json:summary.paired_comparisons[arm_vs_uniform]",
+      "standard_tvsum_cv_fixed/results.json:baseline_records.uniform (F1 grouped by video_key and averaged across saved fold appearances)",
+      "standard_tvsum_cv_bilstm/backbone_comparison.json:unique_test_video_scores.bilstm (paired with grouped uniform F1; scipy.stats.ttest_rel and wilcoxon(zero_method='zsplit'))"
+    ],
+    "mechanism.tex": [
+      "mechanism_8e/results.json:spearman_associations[*].{descriptor,spearman_rho,bootstrap_ci_95_lower,bootstrap_ci_95_upper,n_videos}"
+    ],
+    "mechanism_cases.tex": [
+      "mechanism_8e/results.json:per_video[video_id].{mean_f1,barycenter_f1,f1_gap_barycenter_minus_mean,shared_selected_pick_count}"
+    ],
+    "oracle_metrics.tex": [
+      "consensus_oracle_8b/results.json:per_video[*].variants.{mean,barycenter}.{f1,spearman_rho,kendall_tau}",
+      "consensus_oracle_8b/results.json:overall.paired_vs_mean.barycenter (F1 raw/Holm p-values)",
+      "consensus_oracle_8d/results.json:secondary_metric_means and secondary_paired_tests_vs_mean (rank metric means and raw/Holm p-values)"
+    ],
+    "secondary_metrics.tex": [
+      "consensus_oracle_8d/results.json:secondary_metric_means[metric][mean,barycenter]",
+      "consensus_oracle_8d/results.json:secondary_paired_tests_vs_mean[metric,barycenter].{difference_variant_minus_mean,paired_t_p_raw,paired_t_p_holm,wilcoxon_p_raw,wilcoxon_p_holm}"
+    ],
+    "simulation.tex": [
+      "simulation_jitter/SIMULATION_results.json:shift_summary[*].{shift_width_picks,mean_target_f1,barycenter_target_f1,mean_gain_barycenter_minus_mean,bootstrap_ci_95_lower,bootstrap_ci_95_upper,videos_barycenter_improved,n_videos}"
+    ],
+    "w2_characterization.tex": [
+      "consensus_oracle_8d/results.json:w2_characterization_only.{mean_target_average_w2,barycenter_average_w2,barycenter_minus_mean_w2,paired_t_p_raw,paired_t_p_holm,wilcoxon_p_raw,wilcoxon_p_holm,n}"
+    ]
+  },
+  "input_protocol_fingerprints": {
+    "annotation_sha256": "13972d16f2f05016dcbb4a62563cc74db98e829facbd8151cd0276cf47b4bd98",
+    "feature_sha256": "ec9cbcc715887d30ba2ad46764cb810f07eb6d6241e96c0eac5fca51d398228b",
+    "info_sha256": "162e37e5d027d293d5e7877aa0b7fdac417a2e7c077b95a159334717202ea59d"
+  },
+  "source_files": {
+    "backbone": {
+      "path": "results\\standard_tvsum_cv_bilstm\\backbone_comparison.json",
+      "sha256": "336d369f1874a1b0150789a6e8d7450b171b01ff0ac2fb56de52b304100628d3"
+    },
+    "learned": {
+      "path": "results\\standard_tvsum_cv_fixed\\results.json",
+      "sha256": "3f02973c5f557e786f9a9d5e7320e2df5dc7d02b3d3eac9e0a559b05d1aad123"
+    },
+    "mechanism": {
+      "path": "results\\mechanism_8e\\results.json",
+      "sha256": "a848615e1697fe918d0431c8656d550262f66ce5950d81120ff62c772c227153"
+    },
+    "oracle": {
+      "path": "results\\consensus_oracle_8b\\results.json",
+      "sha256": "a74c6d03eae9d8c264be371f4850a9af66c50230284a2c278d337fb1e980cf96"
+    },
+    "secondary": {
+      "path": "results\\consensus_oracle_8d\\results.json",
+      "sha256": "6df364e18af66d7ebccba13df445305149dce0d69cf58212e68a0b596df8b6ec"
+    },
+    "simulation": {
+      "path": "results\\simulation_jitter\\SIMULATION_results.json",
+      "sha256": "5d5d1279ef1aa45e5d7bdef2389da824742e942025295f83192772dc4c9ece1a"
+    }
+  }
+}

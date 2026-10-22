@@ -1,0 +1,28 @@
+{
+  "num_videos": 5,
+  "barycenter_w2": {
+    "mean": 375.50964,
+    "std": 441.3270772250077
+  },
+  "mean_w2": {
+    "mean": 504.12064,
+    "std": 593.3219858856639
+  },
+  "gap_absolute": {
+    "mean": 128.61100000000005,
+    "std": 221.51253293256354
+  },
+  "avg_improvement_pct": 20.32188366833936,
+  "barycenter_wins": 5,
+  "win_rate_pct": 100.0,
+  "statistical_tests": {
+    "paired_t_test": {
+      "t_statistic": -1.2982693793753703,
+      "p_value": 0.2639899427811485
+    },
+    "wilcoxon": {
+      "w_statistic": 0.0,
+      "p_value": 0.0625
+    }
+  }
+}

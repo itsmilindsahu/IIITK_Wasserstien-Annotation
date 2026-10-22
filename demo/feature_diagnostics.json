@@ -1,0 +1,119 @@
+{
+  "clips": [
+    {
+      "decode_seconds": 0.18495180000172695,
+      "duration_seconds": 30.0,
+      "feature_count": 30,
+      "feature_seconds": 2.53743459999896,
+      "file": "BBB_clip_30s.mp4",
+      "l2_normalized_feature_mean": 0.022349214181303978,
+      "l2_normalized_feature_std": 0.021842051297426224,
+      "l2_normalized_norm_mean": 1.0,
+      "raw_feature_mean": 0.34194833040237427,
+      "raw_feature_std": 0.3316057622432709,
+      "raw_l2_mean": 15.133306503295898,
+      "raw_l2_quantiles_0_25_50_75_100": [
+        9.991628646850586,
+        14.806077241897583,
+        15.535958766937256,
+        16.16614532470703,
+        17.948732376098633
+      ],
+      "raw_l2_std": 1.821936011314392
+    },
+    {
+      "decode_seconds": 0.351107199996477,
+      "duration_seconds": 60.0,
+      "feature_count": 60,
+      "feature_seconds": 5.039008100000501,
+      "file": "BBB_clip_60s.mp4",
+      "l2_normalized_feature_mean": 0.02324715070426464,
+      "l2_normalized_feature_std": 0.02088378742337227,
+      "l2_normalized_norm_mean": 1.0,
+      "raw_feature_mean": 0.38243257999420166,
+      "raw_feature_std": 0.34513482451438904,
+      "raw_l2_mean": 16.424989700317383,
+      "raw_l2_quantiles_0_25_50_75_100": [
+        12.750922203063965,
+        15.634228944778442,
+        16.281622886657715,
+        16.898571491241455,
+        21.113000869750977
+      ],
+      "raw_l2_std": 1.4004900455474854
+    },
+    {
+      "decode_seconds": 0.4948069999991276,
+      "duration_seconds": 90.0,
+      "feature_count": 90,
+      "feature_seconds": 7.6165148000000045,
+      "file": "BBB_clip_90s.mp4",
+      "l2_normalized_feature_mean": 0.024088475853204727,
+      "l2_normalized_feature_std": 0.019907480105757713,
+      "l2_normalized_norm_mean": 1.0,
+      "raw_feature_mean": 0.4069199562072754,
+      "raw_feature_std": 0.33871886134147644,
+      "raw_l2_mean": 16.877368927001953,
+      "raw_l2_quantiles_0_25_50_75_100": [
+        13.051604270935059,
+        15.909105062484741,
+        16.791568756103516,
+        17.85387134552002,
+        20.469770431518555
+      ],
+      "raw_l2_std": 1.481953501701355
+    }
+  ],
+  "feature_file": "eccv16_dataset_tvsum_google_pool5.h5",
+  "hdf5_features": {
+    "feature_dimension": 1024,
+    "feature_mean": 0.017157554626464844,
+    "feature_std": 0.026118583977222443,
+    "l2_mean": 1.0,
+    "l2_quantiles_0_25_50_75_100": [
+      0.9999999403953552,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "l2_std": 1.8824575676035238e-08,
+    "vector_count": 23510
+  },
+  "normalized_comparison": {
+    "l2_mean_abs_difference": 0.0,
+    "mean_abs_difference": 0.006360601633787155,
+    "std_relative_difference": 0.2121274899966539
+  },
+  "preprocessing_assessment": "Raw pool5 norms differ from the HDF5's unit-norm vectors; per-frame L2 normalization is applied before the saved training scaler. Remaining channel-statistic differences are disclosed; the scaler is applied exactly as trained.",
+  "purpose": "Extractor diagnostic only; these CC-licensed clips are not TVSum benchmark data and no benchmark metric is computed from them.",
+  "source": {
+    "credit": "Blender Foundation / www.bigbuckbunny.org",
+    "download_url": "https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4.zip",
+    "license": "Creative Commons Attribution 3.0",
+    "license_url": "https://peach.blender.org/about/",
+    "note": "Three time-window clips are sampled from this licensed source.",
+    "title": "Big Buck Bunny, Blender Foundation"
+  },
+  "torchvision_l2_normalized_pool5": {
+    "feature_dimension": 1024,
+    "feature_mean": 0.023518156260252,
+    "feature_std": 0.020578114315867424,
+    "l2_mean": 1.0,
+    "l2_quantiles_0_25_50_75_100": [
+      0.9999998807907104,
+      0.9999999403953552,
+      1.0,
+      1.0,
+      1.0000001192092896
+    ],
+    "l2_std": 4.02300699420266e-08,
+    "vector_count": 180
+  },
+  "torchvision_raw_pool5": {
+    "l2_mean_across_clips": 16.145221710205078,
+    "mean_across_clip_means": 0.37710028886795044,
+    "std_across_clip_stds": 0.3384864826997121
+  },
+  "torchvision_weights": "GoogLeNet_Weights.IMAGENET1K_V1"
+}

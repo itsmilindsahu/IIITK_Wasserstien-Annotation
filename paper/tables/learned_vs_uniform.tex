@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Paired learned-model versus uniform-summary F1 comparisons over the saved unique test videos. Raw paired-test p-values are shown.}
+\label{tab:learned-uniform}
+\begin{tabular}{lrrrr}
+\toprule
+Learned model & $\Delta$ F1 & $n$ & Paired $t$ $p$ & Wilcoxon $p$ \\
+\midrule
+A: Mean target + MSE & 1.283 & 32 & 0.253 & 0.345 \\
+B: Mean target + cross-entropy & 2.015 & 32 & 0.0814 & 0.0741 \\
+C: Mean target + Cramer loss & 0.864 & 32 & 0.474 & 0.733 \\
+D: Barycenter target + MSE & 0.749 & 32 & 0.521 & 0.775 \\
+E: Barycenter target + Cramer loss & 1.141 & 32 & 0.337 & 0.443 \\
+F: Validation-selected blend + Cramer loss & 1.242 & 32 & 0.297 & 0.421 \\
+BiLSTM, mean target + cross-entropy & 2.492 & 32 & 0.0493 & 0.0683 \\
+\bottomrule
+\end{tabular}
+\end{table}

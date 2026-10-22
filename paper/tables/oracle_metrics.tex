@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Leave-one-annotator-out real-TVSum oracle metrics. Mean and barycenter estimates are averages over videos; paired tests compare per-video means.}
+\label{tab:oracle}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+Metric & Mean & Barycenter & Difference & Paired $t$ $p$ (raw/Holm) & Wilcoxon $p$ (raw/Holm) \\
+\midrule
+F1 (\%) & 62.621 & 60.681 & -1.940 & 0.00113/0.00604 & 0.000475/0.00244 \\
+Spearman $\rho$ & 0.395 & 0.244 & -0.151 & 1.13e-22/9.06e-22 & 1.78e-15/1.42e-14 \\
+Kendall $\tau$ & 0.309 & 0.192 & -0.117 & 2.95e-22/2.36e-21 & 1.78e-15/1.42e-14 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace{1mm}
+{\footnotesize Paired test columns show raw/Holm-adjusted p-values. F1 uses the saved oracle paired comparison; rank metrics use Checkpoint secondary paired tests.}
+\end{table}

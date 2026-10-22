@@ -1,0 +1,13 @@
+SIMULATION ONLY — LABELLED JITTER; NOT REAL TVSUM PERFORMANCE
+Each cohort uses 20 simulated annotators generated from real-video mean curves.
+All gains and CIs are serialized in SIMULATION_results.json.
+First declared shift width with positive mean gain: none.
+First declared shift width with a 95% CI wholly above zero: none.
+
+Shift width 0 picks: mean-target F1=86.5529, barycenter-target F1=85.6507, gain=-0.9021, 95% CI [-1.6857, -0.1207], improved on 10/50 videos.
+Shift width 1 picks: mean-target F1=85.7471, barycenter-target F1=84.7174, gain=-1.0296, 95% CI [-1.7853, -0.3632], improved on 7/50 videos.
+Shift width 2 picks: mean-target F1=84.6626, barycenter-target F1=83.9410, gain=-0.7215, 95% CI [-1.3589, -0.0936], improved on 11/50 videos.
+Shift width 4 picks: mean-target F1=83.2114, barycenter-target F1=82.8672, gain=-0.3443, 95% CI [-0.9936, +0.2215], improved on 12/50 videos.
+Shift width 8 picks: mean-target F1=80.3420, barycenter-target F1=79.0540, gain=-1.2880, 95% CI [-2.4869, -0.4044], improved on 10/50 videos.
+Shift width 16 picks: mean-target F1=76.4448, barycenter-target F1=75.6911, gain=-0.7536, 95% CI [-1.9559, +0.4004], improved on 19/50 videos.
+Shift width 32 picks: mean-target F1=73.3404, barycenter-target F1=72.4099, gain=-0.9305, 95% CI [-1.8480, -0.0524], improved on 13/50 videos.

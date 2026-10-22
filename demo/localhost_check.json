@@ -1,0 +1,148 @@
+{
+  "purpose": "Local demo smoke checks only; no benchmark scores or F-scores computed.",
+  "base_url": "http://127.0.0.1:7860",
+  "launcher": ".\\run_demo.ps1",
+  "ffmpeg_version": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+  "ffprobe_version": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+  "source_clips": [
+    {
+      "clip": "demo\\test_clips\\BBB_clip_30s.mp4",
+      "input_sha256": "62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7",
+      "source_duration_seconds": 30.0,
+      "mean_and_barycenter_wall_clock_seconds": 7.360722299999907,
+      "targets": [
+        {
+          "target": "mean",
+          "first_run_seconds": 3.661293500001193,
+          "repeat_run_seconds": 0.028607299998839153,
+          "summary_path": "demo\\cache\\62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7_mean\\mean_summary.mp4",
+          "summary_duration_seconds": 3.958333,
+          "uniform_path": "demo\\cache\\62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7_mean\\uniform_summary.mp4",
+          "uniform_duration_seconds": 3.958333,
+          "timeline_path": "demo\\cache\\62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7_mean\\score_timeline.png",
+          "checks": {
+            "summary_clip_exists_and_probes": true,
+            "uniform_comparison_exists_and_probes": true,
+            "timeline_exists": true,
+            "duration_within_15_percent_plus_1_second": true,
+            "repeat_hits_cache": true
+          },
+          "status": "Input SHA-256: 62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7\nSelected duration: 4.0s of 30.0s (15% budget).\nThe comparison clip uses a uniform score timeline."
+        },
+        {
+          "target": "barycenter",
+          "first_run_seconds": 3.4721814999975322,
+          "repeat_run_seconds": 0.02108339999904274,
+          "summary_path": "demo\\cache\\62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7_barycenter\\barycenter_summary.mp4",
+          "summary_duration_seconds": 3.958333,
+          "uniform_path": "demo\\cache\\62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7_barycenter\\uniform_summary.mp4",
+          "uniform_duration_seconds": 3.958333,
+          "timeline_path": "demo\\cache\\62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7_barycenter\\score_timeline.png",
+          "checks": {
+            "summary_clip_exists_and_probes": true,
+            "uniform_comparison_exists_and_probes": true,
+            "timeline_exists": true,
+            "duration_within_15_percent_plus_1_second": true,
+            "repeat_hits_cache": true
+          },
+          "status": "Input SHA-256: 62579e381a1435c158a038f9783cbf4b528cdf41621cd0c0adc57f12dcba3bf7\nSelected duration: 4.0s of 30.0s (15% budget).\nThe comparison clip uses a uniform score timeline."
+        }
+      ]
+    },
+    {
+      "clip": "demo\\test_clips\\BBB_clip_60s.mp4",
+      "input_sha256": "5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330",
+      "source_duration_seconds": 60.0,
+      "mean_and_barycenter_wall_clock_seconds": 13.264418200000364,
+      "targets": [
+        {
+          "target": "mean",
+          "first_run_seconds": 6.5959987999995064,
+          "repeat_run_seconds": 0.02477039999939734,
+          "summary_path": "demo\\cache\\5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330_mean\\mean_summary.mp4",
+          "summary_duration_seconds": 8.958333,
+          "uniform_path": "demo\\cache\\5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330_mean\\uniform_summary.mp4",
+          "uniform_duration_seconds": 8.958333,
+          "timeline_path": "demo\\cache\\5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330_mean\\score_timeline.png",
+          "checks": {
+            "summary_clip_exists_and_probes": true,
+            "uniform_comparison_exists_and_probes": true,
+            "timeline_exists": true,
+            "duration_within_15_percent_plus_1_second": true,
+            "repeat_hits_cache": true
+          },
+          "status": "Input SHA-256: 5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330\nSelected duration: 9.0s of 60.0s (15% budget).\nThe comparison clip uses a uniform score timeline."
+        },
+        {
+          "target": "barycenter",
+          "first_run_seconds": 6.485011500000837,
+          "repeat_run_seconds": 0.0215213000010408,
+          "summary_path": "demo\\cache\\5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330_barycenter\\barycenter_summary.mp4",
+          "summary_duration_seconds": 8.958333,
+          "uniform_path": "demo\\cache\\5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330_barycenter\\uniform_summary.mp4",
+          "uniform_duration_seconds": 8.958333,
+          "timeline_path": "demo\\cache\\5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330_barycenter\\score_timeline.png",
+          "checks": {
+            "summary_clip_exists_and_probes": true,
+            "uniform_comparison_exists_and_probes": true,
+            "timeline_exists": true,
+            "duration_within_15_percent_plus_1_second": true,
+            "repeat_hits_cache": true
+          },
+          "status": "Input SHA-256: 5c69f6ee3776fec360bcc00d8850140cdefc6cf6c2d40fcdd3476ab49e47d330\nSelected duration: 9.0s of 60.0s (15% budget).\nThe comparison clip uses a uniform score timeline."
+        }
+      ]
+    },
+    {
+      "clip": "demo\\test_clips\\BBB_clip_90s.mp4",
+      "input_sha256": "cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5",
+      "source_duration_seconds": 90.0,
+      "mean_and_barycenter_wall_clock_seconds": 19.639632499998697,
+      "targets": [
+        {
+          "target": "mean",
+          "first_run_seconds": 9.762692999996943,
+          "repeat_run_seconds": 0.015931199999613455,
+          "summary_path": "demo\\cache\\cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5_mean\\mean_summary.mp4",
+          "summary_duration_seconds": 12.958333,
+          "uniform_path": "demo\\cache\\cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5_mean\\uniform_summary.mp4",
+          "uniform_duration_seconds": 12.958333,
+          "timeline_path": "demo\\cache\\cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5_mean\\score_timeline.png",
+          "checks": {
+            "summary_clip_exists_and_probes": true,
+            "uniform_comparison_exists_and_probes": true,
+            "timeline_exists": true,
+            "duration_within_15_percent_plus_1_second": true,
+            "repeat_hits_cache": true
+          },
+          "status": "Input SHA-256: cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5\nSelected duration: 13.0s of 90.0s (15% budget).\nThe comparison clip uses a uniform score timeline."
+        },
+        {
+          "target": "barycenter",
+          "first_run_seconds": 9.681531999998697,
+          "repeat_run_seconds": 0.025548699999490054,
+          "summary_path": "demo\\cache\\cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5_barycenter\\barycenter_summary.mp4",
+          "summary_duration_seconds": 12.958333,
+          "uniform_path": "demo\\cache\\cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5_barycenter\\uniform_summary.mp4",
+          "uniform_duration_seconds": 12.958333,
+          "timeline_path": "demo\\cache\\cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5_barycenter\\score_timeline.png",
+          "checks": {
+            "summary_clip_exists_and_probes": true,
+            "uniform_comparison_exists_and_probes": true,
+            "timeline_exists": true,
+            "duration_within_15_percent_plus_1_second": true,
+            "repeat_hits_cache": true
+          },
+          "status": "Input SHA-256: cb792ba00ace52fa678c4969e25b8a860f66af5e5ab7bc8b04f4902676f69ed5\nSelected duration: 13.0s of 90.0s (15% budget).\nThe comparison clip uses a uniform score timeline."
+        }
+      ]
+    }
+  ],
+  "length_cap_test": {
+    "source_duration_seconds": 601.0,
+    "runtime_seconds": 0.003907399997842731,
+    "check": "PASS",
+    "message": "'Video length exceeds the 10-minute limit.'",
+    "check_before_feature_processing": true
+  }
+}

@@ -1,0 +1,16 @@
+REAL TVSUM MECHANISM ANALYSIS (CHECKPOINT 1)
+Associations only; no causal interpretation. No model training.
+Every reported statistic below is serialized in results.json.
+
+mean_consensus_interior_peak_count: Spearman rho=-0.310438, 95% bootstrap CI [-0.571962, -0.016638] (n=50).
+mean_pairwise_spearman_rho: Spearman rho=-0.288554, 95% bootstrap CI [-0.511258, -0.028416] (n=50).
+annotator_dominant_peak_location_sd_picks: Spearman rho=-0.209993, 95% bootstrap CI [-0.460588, 0.071765] (n=50).
+weighted_overlap_fraction_of_mean_selected_mass: Spearman rho=0.292825, 95% bootstrap CI [0.008722, 0.542381] (n=50).
+
+uGu_10sucQo: mean-target F1 is 41.838 and barycenter-target F1 is 51.800; the saved barycenter-minus-mean gap is +9.962 points.
+The mean consensus has 11 interior peaks at fixed normalized prominence 0.10; the population SD of annotator dominant-peak locations is 66.219 picks.
+The 15%-duration canonical summaries share 41 sampled picks; those shared picks contain 100.00% of the mean target's selected pick mass.
+
+i3wAGJaaktw: mean-target F1 is 74.410 and barycenter-target F1 is 64.329; the saved barycenter-minus-mean gap is -10.081 points.
+The mean consensus has 10 interior peaks at fixed normalized prominence 0.10; the population SD of annotator dominant-peak locations is 61.988 picks.
+The 15%-duration canonical summaries share 38 sampled picks; those shared picks contain 84.40% of the mean target's selected pick mass.

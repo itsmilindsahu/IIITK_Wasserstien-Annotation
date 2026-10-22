@@ -3,3 +3,14 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 .pytest_cache/
+datasets/*.h5
+datasets/*.zip
+datasets/*.bin
+datasets/.DS_Store
+checkpoints/
+demo/cache/
+demo/test_clips/
+demo/study/*
+!demo/study/*.py
+!demo/study/tests/
+!demo/study/tests/*.py

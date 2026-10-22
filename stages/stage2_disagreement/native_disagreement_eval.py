@@ -20,17 +20,13 @@ held-out W2 metric as the main benchmark.
 
 Integration
 ------------
-Drop this file next to your existing `code/` package. It tries to import
-your real dataset/split/barycenter/loss functions first, and only falls
-back to small self-contained equivalents (so the file is runnable/testable
-even if it can't find your modules or the real TVSum download). Check the
-`--- INTEGRATION POINT ---` comments below if any import name doesn't match
-your actual function signatures — those are the only lines you should need
-to touch.
+This script requires the authorized local TVSum annotation TSV and fails if it
+cannot be loaded. Small self-contained analysis helpers may be used when
+optional project modules are unavailable; no synthetic dataset is generated.
 
 Usage
 -----
-    python native_disagreement_eval.py --n-videos 50 --seed 0 \
+    python native_disagreement_eval.py --seed 0 \
         --out results/native_disagreement_benchmark.csv
 """
 
@@ -41,10 +37,11 @@ import csv
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from typing import Callable
 
 # Ensure code/ is on path
-_code_dir = os.path.join(os.path.dirname(__file__), "code")
+_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+_code_dir = os.path.join(_project_root, "code")
 if os.path.isdir(_code_dir) and _code_dir not in sys.path:
     sys.path.insert(0, _code_dir)
 
@@ -60,62 +57,23 @@ except ImportError:
 # --------------------------------------------------------------------------- #
 # --- INTEGRATION POINT 1: dataset loading -----------------------------------
 # --------------------------------------------------------------------------- #
-def _load_real_tvsum_videos() -> Optional[dict]:
-    """
-    Try to load the real TVSum data using your existing dataset.py /
-    download_tvsum.py. Expected to return {video_id: annotator_matrix}
-    where annotator_matrix has shape (K=20, N_segments), each row already
-    normalized to the simplex (sums to 1, nonnegative).
+def _load_real_tvsum_videos() -> dict[str, np.ndarray]:
+    import dataset
+    from download_tvsum import require_tvsum_annotations
 
-    Adjust the two import lines below to match your actual function names
-    if they differ.
-    """
-    try:
-        import dataset  # your code/dataset.py
-        if hasattr(dataset, "load_tvsum_data") and hasattr(dataset, "get_video_distributions"):
-            tsv_path = os.path.join(_code_dir, "ydata-tvsum50-anno.tsv")
-            if not os.path.exists(tsv_path):
-                tsv_path = "ydata-tvsum50-anno.tsv"
-            raw = dataset.load_tvsum_data(tsv_path)
-            return {vid: dataset.get_video_distributions(mat, method="normalize") for vid, mat in raw.items()}
-        if hasattr(dataset, "load_all_videos"):
-            return dataset.load_all_videos()
-        if hasattr(dataset, "load_tvsum_all"):
-            return dataset.load_tvsum_all()
-    except ImportError:
-        pass
-    try:
-        import download_tvsum
-        if hasattr(download_tvsum, "get_all_videos"):
-            return download_tvsum.get_all_videos()
-    except ImportError:
-        pass
-    return None
-
-
-def _synthetic_fallback_videos(n_videos: int, seed: int) -> dict:
-    """Synthetic stand-in matching the paper's stated shape (50 videos,
-    20 annotators, TVSum-like segment counts), used only if the real
-    dataset/download modules aren't importable in this environment."""
-    rng = np.random.default_rng(seed)
+    annotation_path = require_tvsum_annotations(
+        os.path.join(_code_dir, "ydata-tvsum50-anno.tsv")
+    )
+    raw_videos = dataset.load_tvsum_data(annotation_path)
+    if len(raw_videos) != 50:
+        raise ValueError(f"Expected 50 real TVSum videos; found {len(raw_videos)}.")
     videos = {}
-    for v in range(n_videos):
-        n_segments = rng.integers(80, 140)
-        n_annotators = 20
-        # vary native disagreement across videos: some videos get annotators
-        # drawn from very different underlying "preference" distributions
-        # (multi-genre / ambiguous content proxy), others from similar ones.
-        n_modes = rng.integers(1, 4)
-        mode_centers = rng.choice(n_segments, size=n_modes, replace=False)
-        mat = np.zeros((n_annotators, n_segments))
-        for k in range(n_annotators):
-            center = mode_centers[rng.integers(0, n_modes)]
-            width = rng.uniform(5, 25)
-            x = np.arange(n_segments)
-            raw = np.exp(-0.5 * ((x - center) / width) ** 2)
-            raw += rng.uniform(0, 0.05, size=n_segments)
-            mat[k] = raw / raw.sum()
-        videos[f"synthetic_{v:03d}"] = mat
+    for video_id, scores in raw_videos.items():
+        if scores.ndim != 2 or scores.shape[0] != 20:
+            raise ValueError(
+                f"{video_id} must have 20 annotators; got shape {scores.shape}."
+            )
+        videos[video_id] = dataset.get_video_distributions(scores, method="normalize")
     return videos
 
 
@@ -291,21 +249,11 @@ def summarize_by_disagreement_tercile(results: list[VideoResult]) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--n-videos", type=int, default=50,
-                         help="Number of videos to use if falling back to synthetic data.")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=str, default="results/native_disagreement_benchmark.csv")
     args = parser.parse_args()
 
     videos = _load_real_tvsum_videos()
-    used_real = videos is not None
-    if videos is None:
-        print("[native_disagreement_eval] Real dataset modules not found in this "
-              "environment; using synthetic fallback so the script is runnable. "
-              "On your machine (with dataset.py / download_tvsum.py importable) "
-              "this will automatically use the real 50-video TVSum set instead.",
-              file=sys.stderr)
-        videos = _synthetic_fallback_videos(args.n_videos, args.seed)
 
     split_fn = _get_split_fn()
     wb_fn, am_fn = _get_barycenter_fns()
@@ -325,8 +273,7 @@ def main():
         for r in results:
             writer.writerow([r.video_id, r.native_spread, r.w2_barycenter,
                               r.w2_mean, r.gap_pct, r.bary_wins])
-    print(f"Per-video results written to {args.out} "
-          f"(using {'real' if used_real else 'synthetic fallback'} data)")
+    print(f"Per-video results written to {args.out}")
 
     summary = summarize_by_disagreement_tercile(results)
     print("\nNative-disagreement tercile summary "

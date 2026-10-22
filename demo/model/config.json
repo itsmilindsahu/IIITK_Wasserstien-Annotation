@@ -1,0 +1,35 @@
+{
+  "annotation_tsv_sha256": "13972d16f2f05016dcbb4a62563cc74db98e829facbd8151cd0276cf47b4bd98",
+  "architecture": "two-layer bidirectional LSTM, hidden_size=64, dropout=0.1",
+  "batch_size": 4,
+  "epochs": 4,
+  "epochs_source": {
+    "arm": "B_mean_cross_entropy",
+    "file": "results/standard_tvsum_cv_fixed/results.json",
+    "median_selected_epoch": 4,
+    "selected_epoch_record_count": 1250
+  },
+  "feature_dimension": 1024,
+  "feature_h5_sha256": "ec9cbcc715887d30ba2ad46764cb810f07eb6d6241e96c0eac5fca51d398228b",
+  "feature_preprocessing": "L2-normalize each pool5 feature vector, then apply feature_scaler.npz",
+  "info_tsv_sha256": "162e37e5d027d293d5e7877aa0b7fdac417a2e7c077b95a159334717202ea59d",
+  "label": "demo model, trained on all TVSum, never used for any reported number",
+  "learning_rate": 0.001,
+  "objective": "B_mean_cross_entropy",
+  "reported_result_json_sha256": "3f02973c5f557e786f9a9d5e7320e2df5dc7d02b3d3eac9e0a559b05d1aad123",
+  "scaler_file": "feature_scaler.npz",
+  "scaler_sha256": "bc0c2a4776f4ee85b876d6c7ab01dddb5d00237b35036bf252a6d57a2586e604",
+  "seed": 20261019,
+  "targets": [
+    "mean",
+    "barycenter"
+  ],
+  "torch_threads": 4,
+  "torch_version": "2.5.1+cpu",
+  "training_data": "50 real TVSum videos; not used for any reported benchmark number",
+  "weight_decay": 0.0001,
+  "weights": {
+    "barycenter": "3efa11c6e35150cc947dd6a80a557c2a787f4d4210bc2132b774661c5d6998bd",
+    "mean": "fc564bed70a71cef22fcee720b4688162734b091e7289d081da5c234c3d41ca3"
+  }
+}

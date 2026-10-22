@@ -93,5 +93,22 @@ def main():
     print(f"Bary (reg=0.001) W2: {w2_old2:.4f}")
     print(f"True 1D Bary W2: {w2_true:.4f}")
 
+def test_barycenter_quantile_averaging():
+    annotators = np.array([
+        [0.1, 0.2, 0.4, 0.2, 0.1],
+        [0.05, 0.15, 0.5, 0.2, 0.1],
+        [0.2, 0.3, 0.3, 0.1, 0.1],
+    ])
+    bary = true_1d_barycenter(annotators)
+    assert bary.shape == (5,)
+    assert np.isclose(bary.sum(), 1.0)
+    assert np.all(bary >= 0)
+    C = cost_matrix(5)
+    assert C.shape == (5, 5)
+    assert C[0, 0] == 0.0
+    assert C.max() == 1.0
+
+
 if __name__ == "__main__":
     main()
+

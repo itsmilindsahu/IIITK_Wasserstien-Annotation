@@ -1,338 +1,164 @@
 \documentclass[11pt,a4paper]{article}
 
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{hyperref}
-\usepackage{cite}
 \usepackage{microtype}
-\usepackage{xcolor}
-\usepackage{array}
-\usepackage{subcaption}
-\usepackage{caption}
 
-% Figure resolution paths
-\graphicspath{{../assets/}{./}}
+\input{tables/facts.tex}
 
-% Professional caption styling
-\captionsetup{font=small,labelfont=bf,labelsep=period}
-
-% Hyperlink styling
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue!70!black,
-    citecolor=green!50!black,
-    urlcolor=blue!80!black
-}
-
-\title{\textbf{Distribution-Aware Diffusion on the Annotation Simplex for Human Video Summarization}}
-
-\author{
-  \textbf{Research Team} \\
-  Indian Institute of Information Technology, Kottayam \\
-  \texttt{\{research\}@iiitkottayam.ac.in}
-}
-
-\date{\today}
+\title{When Does Wasserstein Consensus Help? Annotator Disagreement in Video Summarization on TVSum}
+\author{Research Team\\Indian Institute of Information Technology, Kottayam}
+\date{}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-Video summarization aims to distill long video streams into concise, representative summaries. A fundamental yet often neglected challenge in supervised video summarization is \emph{multi-annotator disagreement}: independent human annotators exhibit divergent, multimodal preferences regarding what constitutes important video segments. Existing diffusion-based video summarization frameworks (e.g., Shang et al., AAAI-25) collapse multiple human annotations into an arithmetic mean, fundamentally violating the geometry of human disagreement and generating unrepresentative targets that depart from the probability simplex $\Delta^{N-1}$. 
-
-In this work, we propose a principled geometric framework for \textbf{Multi-annotator Simplex-Preserving Diffusion Models (MSPDM)}. Our framework introduces three core contributions: 
-(1) \textbf{Wasserstein Barycenter Consensus}: Rather than Euclidean averaging, we model the annotation distribution via the exact 1D Wasserstein-2 barycenter and formulate an optimal convex blend ($\alpha = 0.6$) that simultaneously optimizes transport geometry ($W_2$) and downstream top-15\% frame selection ($F_1$);
-(2) \textbf{Simplex-Preserving Dirichlet Forward Process}: We replace unconstrained Gaussian diffusion with a Dirichlet forward process coupled with an entropic simplex projection $\text{Proj}_\Delta$, guaranteeing that intermediate states $x_t$ remain strictly on the probability simplex;
-(3) \textbf{Differentiable Cramér-Regularized Objective}: We train the noise predictor using a combined MSE and exact closed-form Cramér distance loss, providing non-vanishing gradients on cumulative distributions.
-
-We establish a rigorous, leak-free evaluation protocol: annotators per video are partitioned into a training set ($K_{\text{train}}=15$) and a strictly held-out set ($K_{\text{heldout}}=5$), with identical seeded weight initialization shared across configurations. Benchmarking across all 50 videos of the TVSum dataset demonstrates that MSPDM achieves decisive improvements over the Euclidean baseline: held-out $W_2$ error drops from $39.19 \to 35.59$ ($p = 2.10 \times 10^{-40}$, paired $t$-test), downstream top-15\% $F_1$ improves from $14.85\% \to 39.25\%$ ($+24.40\%$ absolute gain, $p = 2.33 \times 10^{-26}$), and Spearman rank correlation increases from $-0.004 \to 0.857$ ($p = 7.58 \times 10^{-49}$), outperforming the baseline on 50 out of 50 videos (100\% win rate).
+We study whether a \BarycenterDimension{} Wasserstein consensus target helps
+video-conditioned summarization when human annotators disagree. The analysis
+separates leave-one-annotator-out oracle evaluations from learned models and
+from a labelled jitter simulation. The arithmetic mean and quantile-averaged
+barycenter are compared on the real TVSum annotations and preprocessed visual
+features. The barycenter minimizes the chosen Wasserstein objective by
+construction, but oracle summaries and learned-model results do not show a
+general downstream advantage. Mechanism analyses are associative, and the
+jitter experiment is explicitly simulated rather than additional real-data
+evidence. All numerical tables are generated from saved run JSON files.
 \end{abstract}
 
 \section{Introduction}
-\label{sec:intro}
+Video summarization requires translating frame-level importance judgments
+into a compact set of shots. With multiple annotators, a target distribution
+can be formed by averaging their normalized ratings in the original pick
+index, or by computing a Wasserstein barycenter. These targets optimize
+different notions of consensus: an arithmetic mean minimizes squared
+Euclidean distance, while a \BarycenterDimension{} quantile-averaged barycenter
+minimizes average squared Wasserstein distance on its support.
 
-Video summarization is an essential task for content indexing, video retrieval, and automated media consumption. Formally, given a video consisting of $N$ temporal frames or shot segments, the objective is to produce an importance score vector $x \in \mathbb{R}^N$ that selects the most salient and informative moments. 
-
-To train supervised summarization models, benchmark datasets such as TVSum~\cite{song2015tvsum} collect frame-level annotations from multiple independent human raters (typically $K = 20$ annotators per video). However, human perception of importance is intrinsically subjective: one viewer may prioritize narrative dialogues, another action-heavy sequences, and a third specific character interactions. 
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\linewidth]{mathematical_consensus_and_diffusion.png}
-    \caption{\textbf{Overview of the MSPDM Geometric Framework.} 
-    \emph{(a)} Multi-annotator distributions $x^{(k)} \in \Delta^{N-1}$ and the Wasserstein barycenter $x^*$ preserving multimodal peaks vs. the blurry Euclidean arithmetic mean $\bar{x}$.
-    \emph{(b)} 1D Quantile Monge geometry: closed-form averaging of inverse-CDF functions $F_{x^{(k)}}^{-1}(u)$ produces the exact barycenter.
-    \emph{(c)} Reverse diffusion trajectory on $\Delta^{N-1}$ from prior noise $t = T$ to clean consensus summary $t = 0$, trained with the split Cramér regularizer.}
-    \label{fig:framework_overview}
-\end{figure}
-
-Despite this rich diversity, standard summarization models---including recent diffusion-based models~\cite{shang2025video}---collapse these $K$ discrete annotation vectors into a single arithmetic average:
-\begin{equation}
-    \bar{x} = \frac{1}{K} \sum_{k=1}^K x^{(k)}.
-\end{equation}
-In the geometry of human preferences, the arithmetic mean suffers from three severe flaws:
-\begin{enumerate}
-    \item \textbf{Peak Blurring and Phantom Modes}: If annotator A favors frame $t_1$ and annotator B favors frame $t_2$, their Euclidean average creates an artificial, diffuse plateau centered at $(t_1 + t_2)/2$---a point that neither annotator marked as interesting.
-    \item \textbf{Simplex Departure}: When individual annotator ratings are normalized into probability distributions over temporal frames ($x^{(k)} \in \Delta^{N-1}$), standard Gaussian diffusion processes add unconstrained noise $x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon$ with $\epsilon \sim \mathcal{N}(0, I)$, pushing states into negative coordinates and invalidating probability mass conservation.
-    \item \textbf{Vanishing Gradient on the Simplex}: Pointwise mean squared error (MSE) backpropagated through a softmax simplex output layer produces vanishing gradients on near-uniform states ($\|\nabla_{\text{MSE}}\| \approx 2.1 \times 10^{-3}$), causing standard Euclidean diffusion models to collapse.
-\end{enumerate}
-
-To resolve these challenges, this paper presents a unified geometric approach that models multi-annotator summarization directly on the probability simplex $\Delta^{N-1}$ using 1D Optimal Transport (OT) and Dirichlet diffusion.
+This work asks when that transport-based consensus helps downstream
+summarization, rather than whether it solves its defining transport
+objective. We use the real TVSum videos, their annotator ratings, and the
+saved video-conditioned benchmark outputs. We distinguish oracle target
+evaluation, learned prediction, descriptive mechanism analysis, and a
+controlled but labelled simulation. Results are generated from saved JSON
+artifacts by \texttt{build\_tables.py}; the corresponding input keys and
+checks are recorded in \texttt{tables/table\_sources.json}.
 
 \section{Related Work}
-\label{sec:related}
+\textbf{TODO:} Add a verified review of video summarization and multi-annotator
+consensus methods. We cite the original TVSum dataset paper
+\cite{song2015tvsum}; transport and diffusion references should be added only
+after bibliographic details and their relevance are independently verified.
 
-\subsection{Diffusion Models for Video Summarization}
-Denoising Diffusion Probabilistic Models (DDPM)~\cite{ho2020denoising} and continuous score-based generative models~\cite{song2021score} have achieved remarkable success in generation and structured prediction. Recently, Shang et al.~\cite{shang2025video} applied diffusion models to video summarization by framing importance scoring as a conditional reverse diffusion process. However, their formulation relies on Gaussian noise perturbations and targets the arithmetic mean of annotator scores, leaving the intrinsic simplex geometry and multimodal consensus unaddressed.
+\section{Consensus Targets and the Leave-One-Annotator-Out Protocol}
+For each video, raw annotator ratings are aligned to the preprocessed feature
+pick indices and normalized to probability distributions. In a
+leave-one-annotator-out (LOAO) trial, one annotator is held out and the
+remaining distributions define the target. The arithmetic target is their
+pointwise mean. The barycenter is the \BarycenterDimension{} quantile-averaged
+Wasserstein barycenter on pick-index support, with interpolated mass
+aggregated back to the original picks. The held-out annotator's original-frame
+summary is used for evaluation. The saved oracle protocol averages over
+\OracleAnnotators{} leave-one-annotator-out trials per video.
 
-\subsection{Wasserstein Barycenters and 1D Optimal Transport}
-The Wasserstein-2 distance between two probability distributions $p, q \in \Delta^{N-1}$ on a 1D domain $\{1, \dots, N\}$ equipped with quadratic ground metric $c(i, j) = (i - j)^2$ possesses a closed-form quantile representation~\cite{peyre2019computational,agueh2011barycenters}:
-\begin{equation}
-    W_2^2(p, q) = \int_0^1 \left( F_p^{-1}(u) - F_q^{-1}(u) \right)^2 du,
-\end{equation}
-where $F_p(x) = \sum_{i \le x} p_i$ is the cumulative distribution function (CDF) and $F_p^{-1}(u) = \inf \{ x : F_p(x) \ge u \}$ is the generalized quantile function. The Wasserstein barycenter $x^*$ of $K$ distributions $\{x^{(k)}\}_{k=1}^K$ is defined as:
-\begin{equation}
-    x^* = \arg\min_{x \in \Delta^{N-1}} \frac{1}{K} \sum_{k=1}^K W_2^2(x, x^{(k)}).
-\end{equation}
-In 1D, the quantile function of the barycenter is precisely the arithmetic mean of individual quantile functions:
-\begin{equation}
-    F_{x^*}^{-1}(u) = \frac{1}{K} \sum_{k=1}^K F_{x^{(k)}}^{-1}(u).
-\end{equation}
-This property enables exact, non-iterative barycenter computation without requiring entropic Sinkhorn regularization~\cite{cuturi2014fast}.
+Predicted pick scores are expanded to frames, averaged within the supplied
+shot boundaries, and converted to a summary by the canonical knapsack
+procedure at a frame budget of \BudgetPercent\%. Oracle results average each metric over held-out
+annotators within a video, then pair the resulting video-level values. The
+learned experiment follows the supplied DSNet splits, with validation
+restricted to the training portion. The split file has incomplete unique
+test-video coverage, so reported learned-model tests use the saved common
+unique-video pairing and are not a disjoint all-video cross-validation
+estimate.
 
-\section{Methodology}
-\label{sec:method}
+\section{Oracle Results}
+The saved LOAO oracle results compare the arithmetic mean with the
+quantile-averaged barycenter on F1 and rank correlation. Paired tests are
+performed over videos, and the reported adjusted values use the saved Holm
+correction where specified. On the saved oracle metrics, the barycenter
+\OracleDirection{}.
+\input{tables/oracle_metrics.tex}
+\input{tables/secondary_metrics.tex}
 
-\subsection{Simplex Formulation of Video Summarization}
-Let a video have $N$ frames. Each annotator $k \in \{1, \dots, K\}$ provides raw ratings $s^{(k)} \in [1, 5]^N$. We map raw ratings onto the probability simplex $\Delta^{N-1} = \{ x \in \mathbb{R}^N : x_i \ge 0, \sum_{i=1}^N x_i = 1 \}$ using a temperature-scaled softmax transform:
-\begin{equation}
-    x_i^{(k)} = \frac{\exp(s_i^{(k)} / \tau)}{\sum_{j=1}^N \exp(s_j^{(k)} / \tau)},
-\end{equation}
-where $\tau > 0$ parameterizes annotator peak concentration.
+The barycenter minimizes average \BarycenterDimension{} squared Wasserstein distance
+by construction. Its W2 comparison against held-out normalized annotator
+distributions is therefore reported as characterization only, not as
+evidence of improved summary quality.
+\input{tables/w2_characterization.tex}
 
-\subsection{Exact 1D Wasserstein Barycenter Consensus}
-Given training annotators $\{x^{(k)}\}_{k=1}^{K_{\text{train}}}$, we evaluate the inverse CDF on a uniform grid $u \in \{u_m\}_{m=1}^M \subset [0, 1]$:
-\begin{equation}
-    F_{x^*_{\text{bary}}}^{-1}(u_m) = \frac{1}{K_{\text{train}}} \sum_{k=1}^{K_{\text{train}}} \text{searchsorted}\left( F_{x^{(k)}}, u_m \right).
-\end{equation}
-The continuous inverse CDF is mapped back to the discrete histogram $x^*_{\text{bary}} \in \Delta^{N-1}$ by accumulating sample counts and normalizing:
-\begin{equation}
-    (x^*_{\text{bary}})_i = \frac{1}{M} \sum_{m=1}^M \mathbf{1}\left( \lfloor F_{x^*_{\text{bary}}}^{-1}(u_m) \rceil = i \right).
-\end{equation}
+\section{Learned-Model Results}
+The saved ablation evaluates \AblationArmCount{} arms, labelled A--F, from the
+temporal-convolution run. The additional BiLSTM comparison uses the saved
+mean-target, cross-entropy arm. For those ablation arms, both paired tests against the
+uniform summary are reported; neither test family is silently substituted
+for the other. \AblationUniformFinding{} For the BiLSTM, the saved-data paired
+comparison is mixed: the paired $t$-test gives $p=\BilstmUniformTTestP{}$,
+while Wilcoxon gives $p=\BilstmUniformWilcoxonP{}$. Thus these results do
+not support a consistent claim that learned models exceed uniform
+summarization. The BiLSTM-versus-uniform comparison is reconstructed from the
+saved backbone and uniform per-video records using the same unique-video
+aggregation and paired-test procedure.
+\input{tables/learned_metrics.tex}
+\input{tables/learned_vs_uniform.tex}
+\input{tables/bilstm_comparison.tex}
 
-\subsection{Blended Barycenter Target Formulation ($\alpha = 0.6$)}
-While the pure Wasserstein barycenter ($\alpha=1$) is mathematically optimal for $W_2$ transport distance, quantile interpolation transports probability mass onto frames located \emph{between} distinct annotators' disagreeing peaks. These intermediate frames were rated low by all annotators, which penalizes top-15\% $F_1$ frame-selection even while improving $W_2$. 
+\section{Disagreement and Mechanism Analysis}
+We report associations between the saved per-video barycenter-minus-mean F1
+gap and only the predeclared descriptors: interior peaks in the normalized
+mean consensus, saved mean pairwise annotator Spearman correlation,
+dominant-peak location dispersion, and mass-weighted overlap of canonical
+selections. Correlation intervals are percentile bootstrap intervals over
+videos. They are associations, not causal effects. Qualitative examples are
+summarized from their saved per-video records.
+\input{tables/mechanism.tex}
+\input{tables/mechanism_cases.tex}
 
-To resolve this trade-off, we define the \textbf{blended consensus target}:
-\begin{equation}
-    x^*_{\text{blend}} = \alpha \cdot x^*_{\text{bary}} + (1 - \alpha) \cdot \bar{x}, \quad \alpha \in [0, 1].
-\end{equation}
-An oracle parameter sweep directly against held-out annotators reveals that $\alpha \approx 0.6$ achieves Pareto-optimality, outperforming both the pure barycenter ($\alpha=1$) and the arithmetic mean ($\alpha=0$) simultaneously on both $W_2$ and downstream $F_1$.
+An exploratory smoothing analysis uses the saved high-disagreement subset.
+The $\sigma=\ExploratorySigma{}$ setting is reported as exploratory and was not used to tune or
+select a method.
+\input{tables/exploratory_smoothing.tex}
 
-\subsection{Simplex-Preserving Forward Process}
-At diffusion step $t \in \{1, \dots, T\}$, the noisy distribution $x_t$ is constructed using a combination of the cosine noise schedule $\bar{\alpha}_t$ and Dirichlet perturbations:
-\begin{equation}
-    \delta_t \sim \text{Dir}(\mathbf{1}_N), \quad \tilde{x}_t = \sqrt{\bar{\alpha}_t} x^*_{\text{blend}} + \sqrt{1 - \bar{\alpha}_t} \delta_t,
-\end{equation}
-followed by the simplex projection $\text{Proj}_\Delta(\tilde{x}_t)$:
-\begin{equation}
-    x_t = \text{Proj}_\Delta(\tilde{x}_t) = \frac{\max(\tilde{x}_t, \epsilon)}{\sum_{i=1}^N \max(\tilde{x}_{t, i}, \epsilon)}.
-\end{equation}
+\section{Controlled Jitter Simulation}
+The simulation takes each real video's saved-source mean consensus curve,
+generates simulated annotator curves using the declared random shifts and
+noise, and compares LOAO consensus summaries using the same canonical
+summary procedure. The saved simulation uses \SimulationAnnotators{} simulated
+annotators per video and shift width, shift half-widths of
+\SimulationShiftWidths{} picks, and noise with standard deviation
+\SimulationNoisePercent\% of the source curve maximum. The percentile
+intervals resample videos \BootstrapReplicates{} times. Every output is
+labelled simulation and excluded from the real-data results. A positive mean
+barycenter-gain crossover was \SimulationFirstPositiveCrossover{} in the
+declared range; this controlled result is not evidence about the actual
+annotators.
+\input{tables/simulation.tex}
 
-\subsection{Training Objective: Cramér-Regularized Loss and Analytic Gradient}
-The network $\hat{x}_0 = f_\theta(x_t, t)$ directly predicts the clean target $x_0 = x^*_{\text{blend}}$. The objective function combines standard MSE with a discrete Cramér regularizer over the training annotator set:
-\begin{equation}
-    \mathcal{L}(\theta) = \mathcal{L}_{\text{MSE}}(\hat{x}_0, x^*_{\text{blend}}) + \lambda \cdot \mathcal{L}_{\text{Cramér}}(\hat{x}_0, \{x^{(k)}\}),
-\end{equation}
-where the discrete Cramér distance is defined as:
-\begin{equation}
-    \mathcal{L}_{\text{Cramér}}(\hat{x}_0, \{x^{(k)}\}) = \frac{1}{K_{\text{train}}} \sum_{k=1}^{K_{\text{train}}} \sum_{i=1}^N \left( F_{\hat{x}_0}(i) - F_{x^{(k)}}(i) \right)^2.
-\end{equation}
-Crucially, while the quantile $W_2$ metric relies on non-differentiable step inversions, the Cramér distance provides an \textbf{exact closed-form analytic gradient}:
-\begin{equation}
-    \frac{\partial \mathcal{L}_{\text{Cramér}}}{\partial \hat{x}_{0, j}} = \frac{2}{K_{\text{train}}} \sum_{k=1}^{K_{\text{train}}} \sum_{i=j}^N \left( F_{\hat{x}_0}(i) - F_{x^{(k)}}(i) \right).
-\end{equation}
+\section{Limitations}
+TVSum contains \TVSumVideos{} videos and the saved DSNet experiment covers
+\DSNetUniqueTestVideos{} unique test videos under \DSNetSplitCount{} supplied
+splits. Its overlapping test sets and incomplete coverage limit
+generalization. The barycenter studied here is the
+\BarycenterDimension{}
+quantile-averaged version on pick-index support; other discretizations or
+consensus objectives are outside this analysis. Oracle and learned results
+use distinct protocols and should not be conflated. Mechanism associations
+do not identify causal explanations, and the controlled jitter experiment is
+labelled simulation. The exploratory smoothing result was not used to tune
+the benchmark. No claim of improved summarization, state of the art, or
+diffusion-model performance is made.
 
-\subsection{Reverse Diffusion Sampling and Downstream Evaluation}
-During inference, starting from pure noise $x_T \sim \text{Dir}(\mathbf{1}_N)$, reverse diffusion proceeds for $t = T, \dots, 1$ via:
-\begin{equation}
-    x_{t-1} = \text{Proj}_\Delta\left( \sqrt{\bar{\alpha}_{t-1}}\hat{x}_0 + \sqrt{1 - \bar{\alpha}_{t-1}}\delta_{t-1} \right), \quad \delta_0 = 0.
-\end{equation}
-To evaluate downstream summarization quality without data leakage:
-\begin{enumerate}
-    \item \textbf{Leak-Free Split}: 15 annotators form $S_{\text{train}}$ (target consensus and Cramér loss), and 5 annotators form $S_{\text{heldout}}$ (strictly isolated for downstream validation).
-    \item \textbf{Top-15\% $F_1$ Metric}: Following video summarization conventions, a 15\% duration budget selects the top indices $\mathcal{I}_{\text{pred}}$ from $\hat{x}_0$ and $\mathcal{I}_{\text{gt}}^{(k)}$ from each held-out annotator $k \in S_{\text{heldout}}$. We compute Precision, Recall, and their harmonic mean $F_1 = \frac{2 \cdot P \cdot R}{P + R}$.
-    \item \textbf{Rank Correlations}: Frame-level Spearman rank correlation ($\rho$) and Kendall rank correlation ($\tau$) are evaluated against all held-out annotators.
-\end{enumerate}
-
-\section{Experiments and Results}
-\label{sec:experiments}
-
-\subsection{Methodological Evolution and Baseline Diagnostics}
-\label{sec:diagnostics}
-
-\paragraph{Identification of Methodological Flaws in Initial Prototypes.}
-Early experimental setups suffered from three subtle flaws that confounded evaluation:
-\begin{enumerate}
-    \item \emph{Unseeded Network Initialization}: Weights were initialized from unseeded pseudorandom streams, causing baseline and proposed models to start from disparate weight initializations. Measured gaps were often artifacts of initialization luck rather than model objectives.
-    \item \emph{Non-deterministic Process Salting}: Seeds generated via Python's built-in \texttt{hash(vid)} varied across runs due to \texttt{PYTHONHASHSEED}, breaking deterministic replication. We replaced this with stable cryptographic MD5 hashing.
-    \item \emph{Undertrained Regimes}: At 100 iterations ($\text{lr}=0.01$), model weights moved by only $\sim 10^{-5}$, leaving both networks near their random initialization. Scaling training to 3,000 steps ($\text{lr}=1.0$) allowed true convergence.
-\end{enumerate}
-
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{gradient_norm_comparison.png}
-        \caption{Gradient $\ell_2$ norm at step 0 (log scale).}
-        \label{fig:gradient_norm}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{lr_robustness_baseline.png}
-        \caption{Baseline output std. dev. vs. learning rate.}
-        \label{fig:lr_robustness}
-    \end{subfigure}
-    \caption{\textbf{Diagnostic Analysis of Euclidean Diffusion Failure.} 
-    \emph{(a)} MSE gradients vanish against the softmax simplex boundary ($\|\nabla_{\text{MSE}}\| \approx 2.1\times 10^{-3}$), while MSPDM's Cramér gradient is $\sim 3300\times$ larger ($\|\nabla_{\text{Cramér}}\| \approx 6.8$). 
-    \emph{(b)} Sweeping learning rate across three orders of magnitude ($\text{lr} \in [0.01, 10.0]$) confirms baseline collapse to near-uniform output is strictly invariant to learning rate.}
-    \label{fig:diagnostics_combined}
-\end{figure}
-
-\paragraph{Analysis of Baseline Near-Uniform Collapse.}
-With fixed identical initialization and 3,000 steps, the Baseline's output collapsed to a near-uniform distribution (standard deviation $\approx 5 \times 10^{-5}$ vs target standard deviation $\approx 0.010$). We conducted a learning-rate sweep across three orders of magnitude ($\text{lr} \in [0.01, 10.0]$ across 8 videos, 3,000 steps). As illustrated in Figure~\ref{fig:lr_robustness}, the baseline's output standard deviation remained strictly flat at $\approx 5.4 \times 10^{-5}$ across all learning rates. 
-
-Gradient analysis reveals the root cause (Figure~\ref{fig:gradient_norm}): while MSE gradients vanish against the softmax layer ($\|\nabla_{\text{MSE}}\| \approx 2.1 \times 10^{-3}$), MSPDM's Cramér distance gradient operates directly on the cumulative distributions, yielding $\|\nabla_{\text{Cramér}}\| \approx 6.8$ ($\sim 3300\times$ larger). The baseline failure is thus a structural limitation of unregularized Euclidean MSE on the simplex.
-
-\subsection{Full TVSum-50 Benchmark Results}
-
-Table~\ref{tab:tvsum50_full} reports the performance across all 50 TVSum videos under the leak-free evaluation protocol.
-
-\begin{table}[htbp]
-\centering
-\small
-\renewcommand{\arraystretch}{1.25}
-\setlength{\tabcolsep}{7pt}
-\caption{\textbf{Comprehensive Downstream Benchmark on TVSum-50.} Evaluated across all 50 videos under strict leak-free isolation ($K_{\text{train}}=15, K_{\text{heldout}}=5$) with identical seeded weight initialization ($\text{steps}=3000, \text{lr}=1.0$). Win rate reflects MSPDM outperforming Baseline on individual videos. All improvements are statistically significant at $p < 10^{-9}$.}
-\label{tab:tvsum50_full}
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Evaluation Metric} & \textbf{Baseline} & \textbf{MSPDM (Ours)} & \textbf{$\Delta$ (Gain)} & \textbf{Win Rate} & \textbf{Paired $t$-test} & \textbf{Wilcoxon} \\
-\midrule
-Held-Out $W_2$ Error ($\downarrow$)      & $39.19 \pm 4.63$ & $\mathbf{35.59 \pm 4.87}$ & $-3.60$ & \textbf{50/50 (100\%)} & $p = 2.1\times 10^{-40}$ & $p = 1.8\times 10^{-15}$ \\
-Downstream $F_1$ (\%) ($\uparrow$)       & $14.85 \pm 6.55$ & $\mathbf{39.25 \pm 5.72}$ & $\mathbf{+24.40\%}$ & \textbf{50/50 (100\%)} & $p = 2.3\times 10^{-26}$ & $p = 7.5\times 10^{-10}$ \\
-Spearman Correlation $\rho$ ($\uparrow$) & $-0.004 \pm 0.096$ & $\mathbf{0.857 \pm 0.012}$ & $+0.861$ & \textbf{50/50 (100\%)} & $p = 7.6\times 10^{-49}$ & $p = 1.8\times 10^{-15}$ \\
-Kendall Correlation $\tau$ ($\uparrow$)  & $-0.003 \pm 0.071$ & $\mathbf{0.709 \pm 0.017}$ & $+0.712$ & \textbf{50/50 (100\%)} & $p = 2.9\times 10^{-51}$ & $p = 1.8\times 10^{-15}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{benchmark_50videos_distribution.png}
-        \caption{Held-Out $W_2$ error and reduction distribution.}
-        \label{fig:w2_box}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{rank_correlation_comparison.png}
-        \caption{Spearman $\rho$ and Kendall $\tau$ rank correlations.}
-        \label{fig:rank_corr}
-    \end{subfigure}
-    \caption{\textbf{TVSum-50 Downstream Performance Distributions.} 
-    \emph{(a)} Box plot of held-out $W_2$ distance across 50 videos (left) and per-video gain distribution (right). 
-    \emph{(b)} Rank correlation distributions. Baseline outputs carry near-zero correlation due to softmax vanishing gradients, while MSPDM predictions closely mirror human ratings ($\rho = 0.857, \tau = 0.709$).}
-    \label{fig:main_results_paired}
-\end{figure}
-
-MSPDM outperforms the Euclidean baseline on every evaluated video (100\% win rate) across all metrics. As shown in Figure~\ref{fig:main_results_paired}, baseline rank correlation centers around zero due to near-uniform output, while MSPDM maintains high fidelity with held-out annotators ($\rho = 0.8571$).
-
-\subsection{Full 50-Video Score Sharpening Ablation}
-
-To analyze how consensus geometry behaves across varying degrees of annotator peakiness, Table~\ref{tab:sharpening_50} presents the full 50-video sharpening benchmark under leak-free held-out evaluation, sorted by increasing annotator spread.
-
-\begin{table}[htbp]
-\centering
-\small
-\renewcommand{\arraystretch}{1.22}
-\setlength{\tabcolsep}{8pt}
-\caption{\textbf{Full 50-Video Score Sharpening Ablation.} Held-out $W_2$ consensus error across all 50 TVSum videos under varying score distributions. As annotator preferences become sharper and more multimodal (increasing Spread), the geometric advantage of the Wasserstein Barycenter increases monotonically from $+0.06\%$ up to $+18.69\%$.}
-\label{tab:sharpening_50}
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Transformation} & \textbf{Spread} & \textbf{$W_2(\text{Bary})$} & \textbf{$W_2(\text{Mean})$} & \textbf{Gap (\%)} & \textbf{Win Rate} & \textbf{Wilcoxon $p$} \\
-\midrule
-Linear Normalize           & $1.41$   & \textbf{0.901}  & 0.903  & $+0.06\%$ & 26 / 50 & $0.421$ \\
-$z$-score exp ($\tau=1.0$) & $11.46$  & \textbf{6.639}  & 6.971  & $\mathbf{+3.99\%}$ & \textbf{46 / 50 (92\%)} & $1.02 \times 10^{-11}$ \\
-$z$-score exp ($\tau=0.5$) & $47.94$  & \textbf{26.921} & 31.406 & $\mathbf{+13.37\%}$ & \textbf{49 / 50 (98\%)} & $2.49 \times 10^{-14}$ \\
-Softmax ($\tau=0.5$)       & $68.09$  & \textbf{38.035} & 45.537 & $\mathbf{+15.74\%}$ & \textbf{49 / 50 (98\%)} & $8.88 \times 10^{-15}$ \\
-Softmax ($\tau=0.2$)       & $110.29$ & \textbf{61.149} & 75.477 & $\mathbf{+18.69\%}$ & \textbf{50 / 50 (100\%)} & $1.78 \times 10^{-15}$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{sharpening_gap_comparison.png}
-        \caption{Sharpening gap vs. annotator divergence.}
-        \label{fig:sharpening_gap}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{barycenter_vs_mean_50videos_improvement.png}
-        \caption{Oracle per-video held-out improvement.}
-        \label{fig:oracle_improvement}
-    \end{subfigure}
-    \caption{\textbf{Geometry of Disagreement and Oracle Consensus.} 
-    \emph{(a)} Advantage of exact $W_2$ barycentric consensus over arithmetic mean increases monotonically with annotator divergence. 
-    \emph{(b)} At the oracle level (scoring consensus directly against held-out annotators), the barycenter reduces consensus error by $-16.55\%$ on all 50/50 videos ($p = 1.79 \times 10^{-22}$).}
-    \label{fig:sharpening_and_oracle}
-\end{figure}
-
-As shown in Figure~\ref{fig:sharpening_gap}, the barycenter advantage increases monotonically from $+0.06\%$ up to $+18.69\%$ as annotator preferences become sharper and more multimodal.
-
-\subsection{Native Annotator Disagreement Evaluation}
-
-To rule out synthetic transform artifacts, we evaluated the consensus targets on raw, unsharpened ratings partitioned into disagreement terciles across the 50 videos (Table~\ref{tab:terciles}).
-
-\begin{table}[htbp]
-\centering
-\small
-\renewcommand{\arraystretch}{1.22}
-\setlength{\tabcolsep}{10pt}
-\caption{\textbf{Native Disagreement Tercile Analysis (No Synthetic Scaling).} Partition of 50 TVSum videos by raw annotator spread. The barycenter advantage monotonically grows with organic human disagreement.}
-\label{tab:terciles}
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Disagreement Tercile} & \textbf{Videos ($n$)} & \textbf{Mean Spread} & \textbf{$W_2(\text{Bary})$} & \textbf{$W_2(\text{Mean})$} & \textbf{Gap (\%)} & \textbf{Win Rate} \\
-\midrule
-Low Disagreement    & 16 & 1.141 & 0.755 & 0.752 & $-0.46\%$ & 5 / 16 (31\%) \\
-Medium Disagreement & 16 & 1.361 & \textbf{0.782} & 0.784 & $\mathbf{+0.25\%}$ & \textbf{9 / 16 (56\%)} \\
-High Disagreement   & 18 & 1.694 & \textbf{1.137} & 1.143 & $\mathbf{+0.36\%}$ & \textbf{12 / 18 (67\%)} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The empirical advantage of Wasserstein barycentric consensus grows monotonically with native human disagreement, confirming the theoretical validity on organic human diversity.
-
-\subsection{Oracle Consensus Error Reduction}
-At the pure target level (scoring consensus targets directly against held-out annotators prior to neural network training), the 1D Wasserstein Barycenter achieves an error of $\mathbf{22.01 \pm 8.05}$ compared to $26.37 \pm 9.43$ for the Arithmetic Mean---a statistically significant error reduction of $\mathbf{-16.55\%}$ across all 50 videos ($p = 1.79 \times 10^{-22}$, Wilcoxon signed-rank test; Figure~\ref{fig:oracle_improvement}).
-
-\section{Discussion and Conclusion}
-\label{sec:discussion}
-
-We have demonstrated that modeling multi-annotator video summarization directly on the probability simplex with Optimal Transport barycenters, Dirichlet diffusion, and Cramér regularization resolves the foundational flaws of Euclidean annotation averaging. By diagnosing early initialization flaws and vanishing MSE gradients, we proved that Euclidean diffusion collapses on simplex boundaries, whereas Cramér-regularized simplex diffusion achieves high fidelity with human raters ($39.25\%$ top-15\% $F_1$, $0.857$ Spearman correlation). 
-
-Future work will integrate the validated geometric diffusion pipeline with deep spatio-temporal backbones such as Video-LLaVA and multi-modal CLIP transformers across additional benchmarks including SumMe and FPVSum.
+\section{Conclusion}
+On this benchmark, minimizing Wasserstein distance does not by itself imply
+better F1 or rank agreement. The saved oracle and learned results, along with
+the explicitly separated mechanism and simulation analyses, motivate a
+conditional rather than universal account of when consensus choices may
+matter. Any broader claim requires independently validated data and
+evaluation.
 
 \bibliographystyle{plain}
 \bibliography{references}

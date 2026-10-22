@@ -1,0 +1,60 @@
+{
+  "clips": [
+    {
+      "clip": "BBB_clip_30s.mp4",
+      "duration_seconds": 30.0,
+      "stages_seconds": {
+        "download_decode_seconds": 0.17951100000209408,
+        "feature_seconds": 2.528690099999949,
+        "ffmpeg_seconds": 0.18757849999747123,
+        "knapsack_seconds": 0.0001995999991777353,
+        "scoring_seconds": 0.004048200000397628,
+        "shot_seconds": 0.2678463999982341
+      }
+    },
+    {
+      "clip": "BBB_clip_60s.mp4",
+      "duration_seconds": 60.0,
+      "stages_seconds": {
+        "download_decode_seconds": 0.3487704999970447,
+        "feature_seconds": 5.088207500000863,
+        "ffmpeg_seconds": 0.2541409000004933,
+        "knapsack_seconds": 0.00032300000020768493,
+        "scoring_seconds": 0.0054013000008126255,
+        "shot_seconds": 0.5389359000000695
+      }
+    },
+    {
+      "clip": "BBB_clip_90s.mp4",
+      "duration_seconds": 90.0,
+      "stages_seconds": {
+        "download_decode_seconds": 0.4727603999999701,
+        "feature_seconds": 7.660729499999434,
+        "ffmpeg_seconds": 0.3652634999998554,
+        "knapsack_seconds": 0.0005605000005743932,
+        "scoring_seconds": 0.008146700001816498,
+        "shot_seconds": 0.772533299998031
+      }
+    }
+  ],
+  "device": "CPU",
+  "dominant_stage_by_mean_seconds": "feature_seconds",
+  "mean_stage_seconds": {
+    "download_decode_seconds": 0.33368063333303627,
+    "feature_seconds": 5.092542366666748,
+    "ffmpeg_seconds": 0.2689942999992733,
+    "knapsack_seconds": 0.0003610333333199378,
+    "scoring_seconds": 0.0058654000010089176,
+    "shot_seconds": 0.5264385333321115
+  },
+  "purpose": "Demo-system timing only. Clips are licensed CC BY 3.0 test extracts; no TVSum benchmark scores are computed.",
+  "sampling_rate_fps": 1,
+  "stage_definition": {
+    "download_decode_seconds": "Upload-mode local decode of sampled frames; no network download",
+    "feature_seconds": "GoogLeNet preprocessing and pool5 forward passes",
+    "ffmpeg_seconds": "Encoding model and uniform summary clips",
+    "knapsack_seconds": "Canonical 0/1 shot knapsack, model and uniform",
+    "scoring_seconds": "BiLSTM inference",
+    "shot_seconds": "PySceneDetect ContentDetector"
+  }
+}

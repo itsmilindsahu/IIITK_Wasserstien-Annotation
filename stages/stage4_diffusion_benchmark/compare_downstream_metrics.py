@@ -1,7 +1,7 @@
 """
 compare_downstream_metrics.py
 
-Comprehensive Comparison between Baseline (AAAI-25 standard) and Proposed (MSPDM):
+Comparison between an in-repository Euclidean mean-target baseline and the MSPDM prototype:
 Computes both:
   1. Standard Literature Metrics:
      - Mean F1-score (top 15% length budget knapsack/ranking against annotators)
@@ -25,7 +25,7 @@ from scipy import stats
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dataset import load_tvsum_data, get_video_distributions, stable_seed
-from download_tvsum import download_or_generate_tvsum
+from download_tvsum import require_tvsum_annotations
 from barycenter import wasserstein_barycenter, arithmetic_mean, blended_barycenter
 from forward import forward_step_mine, forward_step_baseline
 from losses import wasserstein_loss, w2_1d
@@ -78,7 +78,7 @@ def evaluate_f1_and_correlations(predicted_dist, ground_truth_scores, budget_pct
 def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0.01):
     tsv_path = os.path.join(os.path.dirname(__file__), "ydata-tvsum50-anno.tsv")
     if not os.path.exists(tsv_path):
-        download_or_generate_tvsum(tsv_path)
+        require_tvsum_annotations(tsv_path)
 
     tvsum_videos = load_tvsum_data(tsv_path)
     vid_keys = list(tvsum_videos.keys())[:n_videos]
@@ -124,7 +124,7 @@ def run_full_comparison(n_videos=50, frames=100, steps=100, bary_alpha=1.0, lr=0
 
         gen_mine = generate_sample(net_mine, frames, T=200, mode="mine", rng=np.random.default_rng(vid_seed + 10))
 
-        # 2. Train Baseline (AAAI-25)
+        # 2. Train the Euclidean mean-target baseline.
         x_star_base = arithmetic_mean(train_ann)
         net_base = NoisePredictor(frames, lr=lr, rng=np.random.default_rng(vid_seed))
         for _ in range(steps):
@@ -168,7 +168,7 @@ def print_comparison_table(metrics):
     print("=" * 85)
     print("      COMPREHENSIVE COMPARISON: PROPOSED (MSPDM) vs BASELINE (AAAI-25) ON TVSUM-50")
     print("=" * 85)
-    print(f"{'Evaluation Metric':<32} | {'Baseline (AAAI-25)':<20} | {'Proposed (MSPDM)':<20} | {'Win Rate / p-val'}")
+    print(f"{'Evaluation Metric':<32} | {'Euclidean mean':<20} | {'MSPDM prototype':<20} | {'Win Rate / p-val'}")
     print("-" * 85)
 
     for name, key, higher_better in [
@@ -269,7 +269,7 @@ def analyze_and_save(metrics, records, output_dir="results"):
     # Figure: box plot of F1 + per-video gap histogram (mirrors the W2 figure)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-    ax1.boxplot([mine_f1, base_f1], tick_labels=["Proposed (MSPDM)", "Baseline (AAAI-25)"],
+    ax1.boxplot([mine_f1, base_f1], tick_labels=["MSPDM prototype", "Euclidean mean baseline"],
                 patch_artist=True,
                 boxprops=dict(facecolor="#d0e1fd", color="#1f77b4"),
                 medianprops=dict(color="#08306b", linewidth=2))

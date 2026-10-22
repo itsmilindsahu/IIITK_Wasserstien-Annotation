@@ -18,26 +18,38 @@ def stable_seed(vid):
 
 def load_tvsum_data(tsv_path="ydata-tvsum50-anno.tsv"):
     """
-    Parses the TVSum TSV file and returns a dictionary of videos.
+    Parses the TVSum annotation TSV and returns a dictionary of videos.
+
+    Reads only the official three-column TVSum v1.1 TSV format.
     Returns:
-        videos: dict mapping video_id to a numpy array of shape (num_annotators, num_frames)
+        videos: dict mapping video_id to an array of shape
+            (num_annotators, num_annotation_positions)
     """
+    tsv_path = os.environ.get("TVSUM_ANNOTATION_TSV", tsv_path)
     if not os.path.exists(tsv_path):
-        raise FileNotFoundError(f"{tsv_path} not found. Please run download_tvsum.py first.")
+        raise FileNotFoundError(
+            f"{tsv_path} not found. Set TVSUM_ANNOTATION_TSV to an authorized "
+            "TVSum annotation TSV; synthetic data is not generated automatically."
+        )
         
     videos = {}
-    with open(tsv_path, 'r') as f:
-        for line in f:
-            parts = line.strip().split('\t')
-            if len(parts) < 4:
-                continue
-                
+    with open(tsv_path, "r", encoding="utf-8-sig") as f:
+        for line_number, line in enumerate(f, 1):
+            parts = line.rstrip("\r\n").split("\t")
+            if len(parts) != 3:
+                raise ValueError(
+                    f"Expected three TSV columns on line {line_number} of {tsv_path}"
+                )
             vid = parts[0]
-            # category = parts[1]
-            # annotator = parts[2]
-            scores_str = parts[3]
-            
-            scores = np.array([int(s) for s in scores_str.split(',')])
+            scores_str = parts[2]
+            try:
+                scores = np.array([int(s) for s in scores_str.split(",")])
+            except ValueError as exc:
+                raise ValueError(
+                    f"Invalid annotation score on line {line_number} of {tsv_path}"
+                ) from exc
+            if scores.size == 0:
+                raise ValueError(f"Empty annotation on line {line_number} of {tsv_path}")
             
             if vid not in videos:
                 videos[vid] = []
@@ -45,7 +57,22 @@ def load_tvsum_data(tsv_path="ydata-tvsum50-anno.tsv"):
             
     # Convert lists to numpy arrays
     for vid in videos:
+        lengths = {len(scores) for scores in videos[vid]}
+        if len(lengths) != 1:
+            raise ValueError(f"Inconsistent annotation lengths for video {vid!r}")
         videos[vid] = np.array(videos[vid])
+
+    if not videos:
+        raise ValueError(f"No TVSum annotations found in {tsv_path}")
+
+    proxy_ids = {f"video_{index:02d}" for index in range(1, 51)}
+    if set(videos) == proxy_ids and all(
+        scores.shape == (20, 150) for scores in videos.values()
+    ):
+        raise ValueError(
+            "The selected TSV is the repository's synthetic proxy, not TVSum. "
+            "Set TVSUM_ANNOTATION_TSV to the authorized official annotations."
+        )
         
     return videos
 

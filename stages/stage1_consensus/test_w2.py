@@ -9,7 +9,7 @@ from forward import forward_step_mine, forward_step_baseline
 from losses import w2_1d
 from model import NoisePredictor
 from dataset import load_tvsum_data, get_video_distributions
-from download_tvsum import download_or_generate_tvsum
+from download_tvsum import require_tvsum_annotations
 
 np.random.seed(7)
 

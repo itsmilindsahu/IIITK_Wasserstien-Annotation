@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Secondary LOAO metrics for mean and barycenter targets. Paired differences are barycenter minus mean; p-values show raw/Holm adjustment.}
+\label{tab:secondary}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+Metric & Mean & Barycenter & Difference & Paired $t$ $p$ (raw/Holm) & Wilcoxon $p$ (raw/Holm) \\
+\midrule
+Spearman $\rho$ & 0.395 & 0.244 & -0.151 & 1.13e-22/9.06e-22 & 1.78e-15/1.42e-14 \\
+Kendall $\tau$ & 0.309 & 0.192 & -0.117 & 2.95e-22/2.36e-21 & 1.78e-15/1.42e-14 \\
+Tolerance F1, $k=2$ & 69.262 & 67.955 & -1.306 & 0.00638/0.0319 & 0.00182/0.0091 \\
+Tolerance F1, $k=5$ & 76.589 & 76.218 & -0.371 & 0.384/1 & 0.137/0.742 \\
+Tolerance F1, $k=10$ & 81.905 & 81.830 & -0.075 & 0.856/1 & 1/1 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

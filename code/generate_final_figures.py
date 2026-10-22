@@ -104,7 +104,7 @@ earlier_text = (
     "\u2022 Weight init: unseeded np.random\n"
     "   \u2192 Baseline vs MSPDM saw different\n"
     "     random weights every run\n\n"
-    "\u2022 Per-video seed: Python hash(vid)\n"
+    "\u2022 Per-video seed: stable hashlib.md5 digest\n"
     "   \u2192 Silently changes every process\n"
     "     restart (PYTHONHASHSEED)\n\n"
     "\u2022 Training: 100 steps, lr=0.01\n"

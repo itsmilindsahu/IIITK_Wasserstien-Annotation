@@ -1,0 +1,47 @@
+TVSum50 leave-one-annotator-out consensus oracle summary
+
+Scope: Checkpoints 8, 8b, and 8d only; this is an annotation-target oracle diagnostic,
+not learned model performance or a deployable baseline. No model training was done.
+
+Protocol: 50 real TVSum videos, 20 annotators/video. For each held-out annotator,
+the other 19 annotators form the target. F1 is computed against only the held-out
+annotator's original-frame user_summary with the canonical 15% summary. The paired
+unit is a per-video mean over the 20 held-out users (n=50).
+
+Main result:
+Mean-target F1=62.621; barycenter F1=60.681;
+barycenter-minus-mean=-1.940 points.
+Checkpoint 8 raw paired t p=0.0011273073; Wilcoxon p=0.00047493774.
+Checkpoint 8b Holm correction across eight variants: all five barycenter-target
+variants have lower overall F1 than mean, with both adjusted paired tests <.05.
+The three smoothed-mean F1 controls are not significantly different from mean after Holm correction.
+
+Disagreement tertile F1 (descriptive means; high disagreement means lower annotator-rank agreement):
+High disagreement n=17: mean=57.303, barycenter=56.078, delta=-1.225; raw paired p(t/Wilcoxon)=0.055028/0.0638275.
+Middle disagreement n=17: mean=64.040, barycenter=63.005, delta=-1.035; raw paired p(t/Wilcoxon)=0.427616/0.3941.
+Low disagreement n=16: mean=66.764, barycenter=63.102, delta=-3.662; raw paired p(t/Wilcoxon)=0.000504983/0.000427246.
+
+Secondary results:
+See all_variant_metrics.csv and all_variant_metrics_and_tests.png for all nine
+variants' F1, rank correlation, and tolerance-F1 metrics. See the copied paired-test
+CSVs for raw and Holm-adjusted p-values.
+Continuous disagreement vs barycenter-minus-mean F1 gap: Spearman rho=-0.2886, bootstrap 95% CI [-0.5146, -0.0222].
+Continuous disagreement vs mean sigma=4-minus-mean F1 gap: Spearman rho=-0.2962, bootstrap 95% CI [-0.5219, -0.0261].
+These are associations, not causal effects.
+W2 characterization only (barycenter minimizes W2 by construction): mean=16.096935, barycenter=15.983935, difference=-0.112999; paired t raw/Holm=1.22321e-09/1.22321e-09; Wilcoxon raw/Holm=1.95399e-13/1.95399e-13.
+Exploratory high-disagreement mean-smoothing gains (not tuned or inferential claims):
+sigma=1: gain=+0.118, bootstrap 95% CI [-0.534, +0.708], improved videos=8/17.
+sigma=2: gain=+0.766, bootstrap 95% CI [-0.241, +1.740], improved videos=11/17.
+sigma=4: gain=+1.498, bootstrap 95% CI [+0.657, +2.348], improved videos=12/17.
+
+Files:
+- consensus_oracle_findings.png: graphical overview.
+- all_variant_metrics_and_tests.png: complete metrics and secondary test matrix.
+- all_variant_metrics.csv: all variant means.
+- oracle_8_results_table.csv, oracle_8b_variant_metrics.csv,
+  oracle_8b_paired_tests.csv, oracle_8d_secondary_paired_tests.csv,
+  oracle_8d_disagreement_and_exploratory.csv, oracle_8d_w2_characterization.csv:
+  detailed copied tables from the checkpoint result directories.
+
+Source JSON files: results/consensus_oracle/results.json,
+results/consensus_oracle_8b/results.json, results/consensus_oracle_8d/results.json.

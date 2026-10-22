@@ -1,0 +1,14 @@
+\begin{table}[ht]
+\centering
+\caption{Exploratory high-disagreement smoothing gains; no smoothing value was used for tuning or selection.}
+\label{tab:exploratory-smoothing}
+\begin{tabular}{lrrrr}
+\toprule
+Variant & Mean F1 gain & Bootstrap \BootstrapConfidenceLevel\% CI & Improved videos / total & Videos \\
+\midrule
+Mean smoothing, $\sigma=1$ & 0.118 & [-0.534, 0.708] & 8 / 17 & 17 \\
+Mean smoothing, $\sigma=2$ & 0.766 & [-0.241, 1.740] & 11 / 17 & 17 \\
+Mean smoothing, $\sigma=4$ & 1.498 & [0.657, 2.348] & 12 / 17 & 17 \\
+\bottomrule
+\end{tabular}
+\end{table}

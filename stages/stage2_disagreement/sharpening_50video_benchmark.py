@@ -16,16 +16,13 @@ same n as the main benchmark table.
 
 Integration
 ------------
-Same pattern as native_disagreement_eval.py: tries your real dataset.py /
-split.py / barycenter.py / losses.py first, falls back to small
-self-contained equivalents only if those aren't importable, so you can
-drop this file straight into `code/` and run it. If your `dataset.py`
-transform functions have different names, fix the three lines marked
-`--- INTEGRATION POINT ---` below.
+This script requires the authorized local TVSum annotation TSV and fails if
+it cannot be loaded. Optional analysis helpers use local NumPy implementations
+when needed; no synthetic dataset is generated.
 
 Usage
 -----
-    python sharpening_50video_benchmark.py --n-videos 50 --seed 0 \
+    python sharpening_50video_benchmark.py --seed 0 \
         --out results/sharpening_50video_summary.csv
 """
 
@@ -38,7 +35,8 @@ import sys
 from typing import Callable
 
 # Ensure code/ is on path
-_code_dir = os.path.join(os.path.dirname(__file__), "code")
+_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+_code_dir = os.path.join(_project_root, "code")
 if os.path.isdir(_code_dir) and _code_dir not in sys.path:
     sys.path.insert(0, _code_dir)
 
@@ -63,24 +61,20 @@ TRANSFORMS = [
 # --------------------------------------------------------------------------- #
 # --- INTEGRATION POINT: dataset + transforms --------------------------------
 # --------------------------------------------------------------------------- #
-def _load_real_tvsum_raw_scores() -> dict | None:
-    """Expected: {video_id: raw_score_matrix} shape (20, N), RAW annotator
-    importance scores (pre-transform), as parsed by your dataset.py before
-    any linear/softmax/zscore_exp transform is applied."""
-    try:
-        import dataset
-        tsv_path = os.path.join(_code_dir, "ydata-tvsum50-anno.tsv")
-        if not os.path.exists(tsv_path):
-            tsv_path = "ydata-tvsum50-anno.tsv"
-        if hasattr(dataset, "load_tvsum_data"):
-            return dataset.load_tvsum_data(tsv_path)
-        if hasattr(dataset, "load_all_raw_scores"):
-            return dataset.load_all_raw_scores()
-        if hasattr(dataset, "load_tvsum_raw"):
-            return dataset.load_tvsum_raw()
-    except ImportError:
-        pass
-    return None
+def _load_real_tvsum_raw_scores() -> dict:
+    """Load authorized raw scores as {video_id: (20, frames)} matrices."""
+    import dataset
+    from download_tvsum import require_tvsum_annotations
+
+    annotation_path = require_tvsum_annotations(
+        os.path.join(_code_dir, "ydata-tvsum50-anno.tsv")
+    )
+    raw_videos = dataset.load_tvsum_data(annotation_path)
+    if len(raw_videos) != 50:
+        raise ValueError(f"Expected 50 real TVSum videos; found {len(raw_videos)}.")
+    if any(scores.ndim != 2 or scores.shape[0] != 20 for scores in raw_videos.values()):
+        raise ValueError("Every real TVSum video must have 20 annotator score vectors.")
+    return raw_videos
 
 
 def _apply_transform(raw_scores: np.ndarray, kind: str, tau) -> np.ndarray:
@@ -117,15 +111,6 @@ def _apply_transform(raw_scores: np.ndarray, kind: str, tau) -> np.ndarray:
         else:
             raise ValueError(kind)
     return out
-
-
-def _synthetic_fallback_raw_scores(n_videos: int, seed: int) -> dict:
-    rng = np.random.default_rng(seed)
-    videos = {}
-    for v in range(n_videos):
-        n_segments = rng.integers(80, 140)
-        videos[f"synthetic_{v:03d}"] = rng.uniform(0, 5, size=(20, n_segments))
-    return videos
 
 
 # --------------------------------------------------------------------------- #
@@ -230,19 +215,11 @@ def evaluate_one(video_id: str, transformed: np.ndarray, seed: int,
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--n-videos", type=int, default=50)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=str, default="results/sharpening_50video_summary.csv")
     args = parser.parse_args()
 
     raw_videos = _load_real_tvsum_raw_scores()
-    used_real = raw_videos is not None
-    if raw_videos is None:
-        print("[sharpening_50video_benchmark] Real dataset modules not found; "
-              "using synthetic fallback so the script is runnable here. On your "
-              "machine this will use the real 50-video TVSum set automatically.",
-              file=sys.stderr)
-        raw_videos = _synthetic_fallback_raw_scores(args.n_videos, args.seed)
 
     split_fn = _get_split_fn()
     wb_fn, am_fn = _get_barycenter_fns()
@@ -298,8 +275,7 @@ def main():
             writer.writerow(row)
 
     print(f"Per-video results: {detail_path}")
-    print(f"Summary (Table 2 at n={args.n_videos}, "
-          f"{'real' if used_real else 'synthetic fallback'} data): {args.out}\n")
+    print(f"Summary (50 real TVSum videos): {args.out}\n")
 
     header = (f"{'Transform':<20}{'Spread':>10}{'W2 Bary':>10}{'W2 Mean':>10}"
               f"{'Gap%':>8}{'WinRate':>9}")
